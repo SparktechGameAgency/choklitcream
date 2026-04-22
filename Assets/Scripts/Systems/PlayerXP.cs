@@ -7,23 +7,44 @@ public class PlayerXP : MonoBehaviour
     public static PlayerXP Instance;
 
     [Header("XP Settings")]
-    public float currentXP;
-    public float xpToNextLevel = 50f;
-    public int currentLevel = 1;
+    public float xpToFirstLevel = 50f;
+    [Tooltip("Multiplier applied to XP requirement each level")]
+    public float xpScaling = 1.4f;
 
-    public UnityEvent onLevelUp; // hook this in the Inspector
+    // Read-only state
+    public float CurrentXP { get; private set; }
+    public float XPRequired { get; private set; }
+    public int CurrentLevel { get; private set; } = 1;
 
-    void Awake() => Instance = this;
+    // Events — UI listens to these
+    public UnityEvent<float, float> onXPChanged;   // (currentXP, requiredXP)
+    public UnityEvent<int> onLevelUp;      // (newLevel)
+
+    void Awake()
+    {
+        Instance = this;
+        XPRequired = xpToFirstLevel;
+    }
 
     public void GainXP(float amount)
     {
-        currentXP += amount;
-        if (currentXP >= xpToNextLevel)
-        {
-            currentXP -= xpToNextLevel;
-            xpToNextLevel *= 1.4f; // each level needs more XP
-            currentLevel++;
-            onLevelUp?.Invoke(); // triggers UI card picker
-        }
+        CurrentXP += amount;
+        onXPChanged?.Invoke(CurrentXP, XPRequired);
+
+        if (CurrentXP >= XPRequired)
+            LevelUp();
+    }
+
+    void LevelUp()
+    {
+        CurrentXP -= XPRequired;
+        XPRequired = Mathf.Round(XPRequired * xpScaling);
+        CurrentLevel++;
+
+        onXPChanged?.Invoke(CurrentXP, XPRequired);
+        onLevelUp?.Invoke(CurrentLevel);
+
+        Debug.Log("[XP] Level up! Now level " + CurrentLevel
+                + " | Next level needs " + XPRequired + " XP");
     }
 }

@@ -1,4 +1,4 @@
-// Scripts/Enemies/EnemyController.cs
+﻿
 using System.Collections;
 using UnityEngine;
 
@@ -10,9 +10,10 @@ public class EnemyController : MonoBehaviour
     private float currentHealth;
     private Rigidbody2D rb;
     private SpriteRenderer sr;
+    private bool isDead = false; // ← death lock prevents double-death
 
     [Header("Hit Flash")]
-    public Color hitColor = Color.white;   // flashes white on hit
+    public Color hitColor = Color.white;
     public float flashDuration = 0.2f;
 
     private Color originalColor;
@@ -27,10 +28,17 @@ public class EnemyController : MonoBehaviour
 
     public void Initialize(Transform playerTransform, EnemyData enemyData)
     {
+        if (enemyData == null)
+        {
+            Debug.LogError("[Enemy] Initialize called with null EnemyData!");
+            return;
+        }
+
         player = playerTransform;
         data = enemyData;
+        isDead = false; // reset death lock when re-pooled
         currentHealth = data.maxHealth;
-        sr.color = originalColor; // reset color when re-pooled
+        sr.color = originalColor;
 
         if (data.sprite != null)
             sr.sprite = data.sprite;
@@ -38,7 +46,7 @@ public class EnemyController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (player == null) return;
+        if (isDead || player == null || data == null) return;
 
         Vector2 dir = (player.position - transform.position).normalized;
         rb.linearVelocity = dir * data.moveSpeed;
@@ -47,11 +55,12 @@ public class EnemyController : MonoBehaviour
 
     public void TakeDamage(float amount)
     {
+        // Ignore damage if already dead or not initialized
+        if (isDead || data == null) return;
+
         currentHealth -= amount;
 
-        // Trigger the hit flash
-        if (flashCoroutine != null)
-            StopCoroutine(flashCoroutine);
+        if (flashCoroutine != null) StopCoroutine(flashCoroutine);
         flashCoroutine = StartCoroutine(HitFlash());
 
         if (currentHealth <= 0) Die();
@@ -61,12 +70,17 @@ public class EnemyController : MonoBehaviour
     {
         sr.color = hitColor;
         yield return new WaitForSeconds(flashDuration);
-        sr.color = originalColor;
+
+        // Only reset if still alive
+        if (!isDead) sr.color = originalColor;
     }
 
     void Die()
     {
-        // Stop flash if dying mid-flash
+        if (isDead) return; // prevent double death
+        isDead = true;
+
+        // Stop flash coroutine cleanly
         if (flashCoroutine != null)
         {
             StopCoroutine(flashCoroutine);
@@ -74,12 +88,29 @@ public class EnemyController : MonoBehaviour
         }
 
         sr.color = originalColor;
-        XPOrb.Spawn(transform.position, data.xpValue);
-        ObjectPool.Instance.Return(data.enemyName, gameObject);
+        rb.linearVelocity = Vector2.zero;
+
+        // Register kill
+        KillTracker.Instance?.RegisterKill();
+
+        // Spawn XP orb
+        if (data != null)
+            XPOrb.Spawn(transform.position, data.xpValue);
+
+        // Return to pool — check everything exists first
+        if (ObjectPool.Instance != null && data != null)
+            ObjectPool.Instance.Return(data.enemyName, gameObject);
+        else
+        {
+            Debug.LogWarning("[Enemy] Could not return to pool — disabling instead.");
+            gameObject.SetActive(false);
+        }
     }
 
     void OnCollisionStay2D(Collision2D col)
     {
+        if (isDead || data == null) return;
+
         if (col.gameObject.CompareTag("Player"))
             col.gameObject.GetComponent<PlayerHealth>()
                 ?.TakeDamage(data.damage * Time.deltaTime);
