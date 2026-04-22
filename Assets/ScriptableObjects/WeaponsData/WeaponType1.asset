@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f4dfcdb34acb7241b3e6c67715b7d6c, type: 3}
+  m_Name: WeaponType1
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  weaponName: ProjectileBullet1
+  projectileSprite: {fileID: 3625043607559282579, guid: 19fb86013d8c24d6cb8410c0aadf30fa, type: 3}
+  damage: 20
+  pierce: 1
+  fireRate: 1
+  projectileSpeed: 8
+  range: 10
+  scale: 1
+  isAoE: 0
+  aoeRadius: 0
+  knockback: 0.2

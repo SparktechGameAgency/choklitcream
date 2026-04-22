@@ -1,16 +1,49 @@
+
 using UnityEngine;
+using UnityEngine.Events;
 
 public class GameTimer : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [Header("Settings")]
+    public float survivalDuration = 600f; // 10 min — change in Inspector
+
+    [Header("Events")]
+    public UnityEvent onTimerComplete; // hook this to your win screen
+
+    public float TimeRemaining { get; private set; }
+    public bool IsRunning { get; private set; }
+
+    public static GameTimer Instance;
+
+    void Awake()
     {
-        
+        Instance = this;
+        TimeRemaining = survivalDuration;
+        IsRunning = true;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        
+        if (!IsRunning) return;
+
+        TimeRemaining -= Time.deltaTime;
+
+        if (TimeRemaining <= 0)
+        {
+            TimeRemaining = 0;
+            IsRunning = false;
+            onTimerComplete?.Invoke();
+        }
+    }
+
+    // Call this when player dies
+    public void StopTimer() => IsRunning = false;
+
+    // Helper: returns "9:45" style string for the UI
+    public string GetFormattedTime()
+    {
+        int minutes = Mathf.FloorToInt(TimeRemaining / 60);
+        int seconds = Mathf.FloorToInt(TimeRemaining % 60);
+        return string.Format("{0}:{1:00}", minutes, seconds);
     }
 }

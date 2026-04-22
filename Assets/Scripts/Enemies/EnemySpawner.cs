@@ -1,5 +1,4 @@
 
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,17 +6,31 @@ public class EnemySpawner : MonoBehaviour
 {
     public static EnemySpawner Instance;
 
-    [Header("Setup")]
-    public GameObject enemyPrefab;
-    public EnemyData[] enemyTypes;
-    public Transform player;
+    [System.Serializable]
+    public class EnemyWaveEntry
+    {
+        public EnemyData data;
+        [Tooltip("How many seconds into the game before this enemy starts spawning")]
+        public float unlockAtTime = 0f;
+        [Range(0f, 1f)]
+        [Tooltip("Relative spawn weight — higher = spawns more often")]
+        public float spawnWeight = 1f;
+    }
 
-    [Header("Spawning")]
+    [Header("Enemy Types")]
+    [Tooltip("Add as many enemy types as you want here")]
+    public List<EnemyWaveEntry> enemyEntries = new();
+
+    [Header("Spawn Settings")]
+    public Transform player;
     public float spawnRadius = 12f;
     public float baseSpawnInterval = 2f;
+    [Tooltip("How much faster enemies spawn per minute survived")]
+    public float difficultyRampPerMinute = 0.3f;
+    [Tooltip("Minimum possible spawn interval (seconds)")]
+    public float minSpawnInterval = 0.3f;
 
-    private List<GameObject> pool = new();
-    private float timer;
+    private float spawnTimer;
     private float elapsedTime;
 
     void Awake() => Instance = this;
@@ -26,47 +39,59 @@ public class EnemySpawner : MonoBehaviour
     {
         elapsedTime += Time.deltaTime;
 
-        // Difficulty: spawn faster as time goes on (min 0.3s interval)
-        float interval = Mathf.Max(0.3f, baseSpawnInterval - elapsedTime * 0.02f);
+        // Escalate difficulty over time
+        float ramp = (elapsedTime / 60f) * difficultyRampPerMinute;
+        float interval = Mathf.Max(minSpawnInterval, baseSpawnInterval - ramp);
 
-        timer -= Time.deltaTime;
-        if (timer <= 0)
+        spawnTimer -= Time.deltaTime;
+        if (spawnTimer <= 0f)
         {
             SpawnEnemy();
-            timer = interval;
+            spawnTimer = interval;
         }
     }
 
     void SpawnEnemy()
     {
-        // Pick a random angle outside the screen
-        Vector2 spawnPos = (Vector2)player.position +
-                           Random.insideUnitCircle.normalized * spawnRadius;
+        EnemyWaveEntry entry = PickRandomEnemy();
+        if (entry == null) return;
 
-        GameObject enemy = GetFromPool();
-        enemy.transform.position = spawnPos;
+        // Spawn just outside the camera view
+        Vector2 spawnPos = (Vector2)player.position
+                         + Random.insideUnitCircle.normalized * spawnRadius;
 
-        // Pick enemy type (later: weight by time)
-        EnemyData data = enemyTypes[Random.Range(0, enemyTypes.Length)];
-        enemy.GetComponent<EnemyController>().Initialize(player);
-        enemy.GetComponent<EnemyController>().data = data;
+        GameObject obj = ObjectPool.Instance.Get(entry.data.enemyName, spawnPos);
+        if (obj == null) return;
+
+        obj.GetComponent<EnemyController>().Initialize(player, entry.data);
     }
 
-    // --- Object Pool ---
-    GameObject GetFromPool()
+    // Weighted random pick — respects unlockAtTime and spawnWeight
+    EnemyWaveEntry PickRandomEnemy()
     {
-        foreach (var obj in pool)
-            if (!obj.activeInHierarchy)
+        List<EnemyWaveEntry> available = new();
+        float totalWeight = 0f;
+
+        foreach (var entry in enemyEntries)
+        {
+            if (elapsedTime >= entry.unlockAtTime)
             {
-                obj.SetActive(true);
-                return obj;
+                available.Add(entry);
+                totalWeight += entry.spawnWeight;
             }
+        }
 
-        // Pool is empty — instantiate a new one
-        var newObj = Instantiate(enemyPrefab);
-        pool.Add(newObj);
-        return newObj;
+        if (available.Count == 0) return null;
+
+        float roll = Random.Range(0f, totalWeight);
+        float cumulative = 0f;
+
+        foreach (var entry in available)
+        {
+            cumulative += entry.spawnWeight;
+            if (roll <= cumulative) return entry;
+        }
+
+        return available[^1];
     }
-
-    public void ReturnToPool(GameObject obj) => obj.SetActive(false);
 }

@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8d0b07d3650034e4cac46e795b6665fa, type: 3}
-  m_Name: EnemyBasic
+  m_Name: Enemylvl2
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  enemyName: Basic
+  enemyName: Medium
   moveSpeed: 2
-  maxHealth: 30
+  maxHealth: 35
   damage: 10
-  xpValue: 5
-  sprite: {fileID: 7482667652216324306, guid: 75f5f34dc1b5347e0b8351032682f224, type: 3}
+  xpValue: 8
+  sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}

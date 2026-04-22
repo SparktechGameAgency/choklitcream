@@ -1,22 +1,39 @@
-
+// Scripts/Enemies/EnemyController.cs
+using System.Collections;
 using UnityEngine;
 
 public class EnemyController : MonoBehaviour
 {
-    public EnemyData data;
+    [HideInInspector] public EnemyData data;
 
     private Transform player;
     private float currentHealth;
     private Rigidbody2D rb;
+    private SpriteRenderer sr;
 
-    void Awake() => rb = GetComponent<Rigidbody2D>();
+    [Header("Hit Flash")]
+    public Color hitColor = Color.white;   // flashes white on hit
+    public float flashDuration = 0.2f;
 
-    // Called by the object pool when this enemy is activated
-    public void Initialize(Transform playerTransform)
+    private Color originalColor;
+    private Coroutine flashCoroutine;
+
+    void Awake()
+    {
+        rb = GetComponent<Rigidbody2D>();
+        sr = GetComponent<SpriteRenderer>();
+        originalColor = sr.color;
+    }
+
+    public void Initialize(Transform playerTransform, EnemyData enemyData)
     {
         player = playerTransform;
+        data = enemyData;
         currentHealth = data.maxHealth;
-        GetComponent<SpriteRenderer>().sprite = data.sprite;
+        sr.color = originalColor; // reset color when re-pooled
+
+        if (data.sprite != null)
+            sr.sprite = data.sprite;
     }
 
     void FixedUpdate()
@@ -25,27 +42,51 @@ public class EnemyController : MonoBehaviour
 
         Vector2 dir = (player.position - transform.position).normalized;
         rb.linearVelocity = dir * data.moveSpeed;
-
-        // Flip sprite to face the player
-        GetComponent<SpriteRenderer>().flipX = dir.x < 0;
+        sr.flipX = dir.x < 0;
     }
 
     public void TakeDamage(float amount)
     {
         currentHealth -= amount;
+
+        // Trigger the hit flash
+        if (flashCoroutine != null)
+            StopCoroutine(flashCoroutine);
+        flashCoroutine = StartCoroutine(HitFlash());
+
         if (currentHealth <= 0) Die();
+    }
+
+    IEnumerator HitFlash()
+    {
+        sr.color = hitColor;
+        yield return new WaitForSeconds(flashDuration);
+        sr.color = originalColor;
     }
 
     void Die()
     {
-        // Drop XP, then return to pool
+        // Stop flash if dying mid-flash
+        if (flashCoroutine != null)
+        {
+            StopCoroutine(flashCoroutine);
+            flashCoroutine = null;
+        }
+
+        sr.color = originalColor;
         XPOrb.Spawn(transform.position, data.xpValue);
-        EnemySpawner.Instance.ReturnToPool(gameObject);
+        ObjectPool.Instance.Return(data.enemyName, gameObject);
     }
 
     void OnCollisionStay2D(Collision2D col)
     {
         if (col.gameObject.CompareTag("Player"))
-            col.gameObject.GetComponent<PlayerHealth>()?.TakeDamage(data.damage * Time.deltaTime);
+            col.gameObject.GetComponent<PlayerHealth>()
+                ?.TakeDamage(data.damage * Time.deltaTime);
+    }
+
+    void OnDisable()
+    {
+        if (rb != null) rb.linearVelocity = Vector2.zero;
     }
 }

@@ -16,7 +16,7 @@ public class PlayerHealth : MonoBehaviour
 
     void Die()
     {
-        // We'll hook this to GameManager later
+        GameTimer.Instance?.StopTimer();
         Debug.Log("Player died!");
         gameObject.SetActive(false);
     }
