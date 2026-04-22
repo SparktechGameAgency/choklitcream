@@ -1,4 +1,4 @@
-// Scripts/Weapons/WeaponManager.cs
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -28,7 +28,6 @@ public class WeaponManager : MonoBehaviour
     {
         RegisterWeaponPools();
 
-        // Give player first weapon at start
         if (availableWeapons.Count > 0)
             EquipWeapon(availableWeapons[0].data);
     }
@@ -39,14 +38,13 @@ public class WeaponManager : MonoBehaviour
         {
             if (entry.data == null || entry.projectilePrefab == null)
             {
-                Debug.LogError("[WeaponManager] Missing data or prefab in Available Weapons list!");
+                Debug.LogError("[WeaponManager] Missing data or prefab!");
                 continue;
             }
 
-            string tag = entry.data.weaponName + "_projectile";
             ObjectPool.Instance.AddPool(new ObjectPool.Pool
             {
-                tag = tag,
+                tag = entry.data.weaponName + "_projectile",
                 prefab = entry.projectilePrefab,
                 initialSize = entry.poolSize
             });
@@ -55,7 +53,7 @@ public class WeaponManager : MonoBehaviour
 
     public void EquipWeapon(WeaponData data)
     {
-        // If already equipped — could add upgrade logic here later
+        // Already equipped check
         foreach (var wc in equippedWeapons)
         {
             if (wc.data.weaponName == data.weaponName)
@@ -65,6 +63,7 @@ public class WeaponManager : MonoBehaviour
             }
         }
 
+        // Create WeaponController child on Player
         GameObject obj = new GameObject("Weapon_" + data.weaponName);
         obj.transform.SetParent(player);
         obj.transform.localPosition = Vector3.zero;
@@ -73,8 +72,11 @@ public class WeaponManager : MonoBehaviour
         wc2.Initialize(data, player);
         equippedWeapons.Add(wc2);
 
+        // Notify the HUD to add the icon
+        EquippedWeaponsHUD.Instance?.AddWeaponIcon(data);
+
         Debug.Log("[WeaponManager] Equipped: " + data.weaponName
-                + " | Total weapons: " + equippedWeapons.Count);
+                + " | Total: " + equippedWeapons.Count);
     }
 
     public List<WeaponData> GetAvailableWeaponDatas()
@@ -89,7 +91,7 @@ public class WeaponManager : MonoBehaviour
     {
         List<WeaponData> list = new();
         foreach (var wc in equippedWeapons)
-            if (wc.data != null) list.Add(wc.data);
+            if (wc != null && wc.data != null) list.Add(wc.data);
         return list;
     }
 }

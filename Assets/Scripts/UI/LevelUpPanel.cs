@@ -1,47 +1,61 @@
-
+﻿
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using UnityEngine.UI;        // ← regular UI Text
 
 public class LevelUpPanel : MonoBehaviour
 {
     public static LevelUpPanel Instance;
 
     [Header("Panel")]
-    public GameObject panelRoot;         // the whole panel GameObject
+    public GameObject panelRoot;
 
-    [Header("Weapon Card Buttons")]
-    public Button[] weaponButtons;       // exactly 3 buttons
-    public Image[] weaponIcons;         // icon on each button
-    public TextMeshProUGUI[] weaponNames;    // weapon name text
-    public TextMeshProUGUI[] weaponDescs;    // short description text
+    [Header("Weapon Cards — exactly 3")]
+    public Button[] weaponButtons;
+    public Image[] weaponIcons;
+    public Text[] weaponNames;    // ← regular Text not TMP
+    public Text[] weaponDescs;    // ← regular Text not TMP
 
     private List<WeaponData> offeredWeapons = new();
+    private bool subscribed = false;
 
     void Awake()
     {
         Instance = this;
-        panelRoot.SetActive(false);
+
+        if (panelRoot != null)
+            panelRoot.SetActive(false);
     }
 
-    void Start()
+    void Update()
     {
-        if (PlayerXP.Instance != null)
+        // Keep trying to subscribe until PlayerXP is ready
+        if (!subscribed && PlayerXP.Instance != null)
+        {
             PlayerXP.Instance.onLevelUp.AddListener(OnLevelUp);
+            subscribed = true;
+            Debug.Log("[LevelUpPanel] Subscribed to PlayerXP!");
+        }
     }
 
     void OnLevelUp(int newLevel)
     {
+        Debug.Log("[LevelUpPanel] Level up received! Level: " + newLevel);
         ShowPanel();
     }
 
     public void ShowPanel()
     {
-        // Pause the game
-        Time.timeScale = 0f;
+        if (WeaponManager.Instance == null)
+        {
+            Debug.LogError("[LevelUpPanel] WeaponManager not found!");
+            return;
+        }
 
         offeredWeapons = GetRandomWeaponOffers(weaponButtons.Length);
+
+        Debug.Log("[LevelUpPanel] Showing panel with "
+                + offeredWeapons.Count + " weapons");
 
         for (int i = 0; i < weaponButtons.Length; i++)
         {
@@ -54,11 +68,13 @@ public class LevelUpPanel : MonoBehaviour
             weaponButtons[i].gameObject.SetActive(true);
 
             WeaponData wd = offeredWeapons[i];
-            int index = i; // capture for lambda
+            int idx = i;
 
-            // Set button visuals
-            if (weaponIcons[i] != null && wd.projectileSprite != null)
-                weaponIcons[i].sprite = wd.projectileSprite;
+            // Set icon
+            if (weaponIcons[i] != null)
+                weaponIcons[i].sprite = wd.weaponIcon != null
+                    ? wd.weaponIcon
+                    : wd.projectileSprite;
 
             if (weaponNames[i] != null)
                 weaponNames[i].text = wd.weaponName;
@@ -66,11 +82,12 @@ public class LevelUpPanel : MonoBehaviour
             if (weaponDescs[i] != null)
                 weaponDescs[i].text = BuildDescription(wd);
 
-            // Clear old listeners and add new one
             weaponButtons[i].onClick.RemoveAllListeners();
-            weaponButtons[i].onClick.AddListener(() => OnWeaponChosen(index));
+            weaponButtons[i].onClick.AddListener(() => OnWeaponChosen(idx));
         }
 
+        // Pause and show
+        Time.timeScale = 0f;
         panelRoot.SetActive(true);
     }
 
@@ -81,31 +98,46 @@ public class LevelUpPanel : MonoBehaviour
         WeaponData chosen = offeredWeapons[index];
         WeaponManager.Instance.EquipWeapon(chosen);
 
+        Debug.Log("[LevelUpPanel] Player chose: " + chosen.weaponName);
         HidePanel();
     }
 
     void HidePanel()
     {
         panelRoot.SetActive(false);
-        Time.timeScale = 1f; // resume game
+        Time.timeScale = 1f;
     }
 
-    // Pick 3 random weapons � prioritise ones not yet equipped
     List<WeaponData> GetRandomWeaponOffers(int count)
     {
         List<WeaponData> all = WeaponManager.Instance.GetAvailableWeaponDatas();
-        List<WeaponData> shuffled = new(all);
+        List<WeaponData> equipped = WeaponManager.Instance.GetEquippedWeaponDatas();
 
-        // Shuffle
-        for (int i = shuffled.Count - 1; i > 0; i--)
+        List<WeaponData> unequipped = new();
+        List<WeaponData> equippedList = new();
+
+        foreach (var w in all)
         {
-            int j = Random.Range(0, i + 1);
-            (shuffled[i], shuffled[j]) = (shuffled[j], shuffled[i]);
+            bool isEquipped = false;
+            foreach (var e in equipped)
+                if (e.weaponName == w.weaponName) { isEquipped = true; break; }
+
+            if (isEquipped) equippedList.Add(w);
+            else unequipped.Add(w);
         }
 
-        // Take up to 'count'
+        Shuffle(unequipped);
+        Shuffle(equippedList);
+
         List<WeaponData> result = new();
-        foreach (var w in shuffled)
+
+        foreach (var w in unequipped)
+        {
+            if (result.Count >= count) break;
+            result.Add(w);
+        }
+
+        foreach (var w in equippedList)
         {
             if (result.Count >= count) break;
             result.Add(w);
@@ -114,12 +146,20 @@ public class LevelUpPanel : MonoBehaviour
         return result;
     }
 
+    void Shuffle(List<WeaponData> list)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
+        }
+    }
+
     string BuildDescription(WeaponData wd)
     {
-        return "DMG " + wd.damage
-             + "  |  Rate " + wd.fireRate + "/s"
-             + "  |  Range " + wd.range
-             + (wd.isAoE ? "  |  AoE" : "")
-             + (wd.pierce > 1 ? "  |  Pierce " + wd.pierce : "");
+        string desc = "DMG " + wd.damage + "  |  " + wd.fireRate + "/s";
+        if (wd.isAoE) desc += "  |  AoE";
+        if (wd.pierce > 1) desc += "  |  Pierce " + wd.pierce;
+        return desc;
     }
 }

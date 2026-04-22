@@ -1,4 +1,4 @@
-// Scripts/Weapons/WeaponController.cs
+
 using UnityEngine;
 
 public class WeaponController : MonoBehaviour
