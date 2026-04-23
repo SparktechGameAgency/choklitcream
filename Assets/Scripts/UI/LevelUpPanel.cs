@@ -1,7 +1,7 @@
 ﻿
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;        // ← regular UI Text
+using UnityEngine.UI;
 
 public class LevelUpPanel : MonoBehaviour
 {
@@ -13,23 +13,30 @@ public class LevelUpPanel : MonoBehaviour
     [Header("Weapon Cards — exactly 3")]
     public Button[] weaponButtons;
     public Image[] weaponIcons;
-    public Text[] weaponNames;    // ← regular Text not TMP
-    public Text[] weaponDescs;    // ← regular Text not TMP
+    public Text[] weaponNames;
+    public Text[] weaponDescs;
 
-    private List<WeaponData> offeredWeapons = new();
+    private enum CardType { Weapon, Ability }
+
+    private struct Card
+    {
+        public CardType type;
+        public WeaponData weapon;
+        public AbilityData ability;
+    }
+
+    private List<Card> offeredCards = new();
     private bool subscribed = false;
 
     void Awake()
     {
         Instance = this;
-
         if (panelRoot != null)
             panelRoot.SetActive(false);
     }
 
     void Update()
     {
-        // Keep trying to subscribe until PlayerXP is ready
         if (!subscribed && PlayerXP.Instance != null)
         {
             PlayerXP.Instance.onLevelUp.AddListener(OnLevelUp);
@@ -40,26 +47,23 @@ public class LevelUpPanel : MonoBehaviour
 
     void OnLevelUp(int newLevel)
     {
-        Debug.Log("[LevelUpPanel] Level up received! Level: " + newLevel);
+        Debug.Log("[LevelUpPanel] Level up! Level: " + newLevel);
         ShowPanel();
     }
 
     public void ShowPanel()
     {
-        if (WeaponManager.Instance == null)
+        offeredCards = GetRandomCards(weaponButtons.Length);
+
+        if (offeredCards.Count == 0)
         {
-            Debug.LogError("[LevelUpPanel] WeaponManager not found!");
+            Debug.Log("[LevelUpPanel] No cards available — skipping.");
             return;
         }
 
-        offeredWeapons = GetRandomWeaponOffers(weaponButtons.Length);
-
-        Debug.Log("[LevelUpPanel] Showing panel with "
-                + offeredWeapons.Count + " weapons");
-
         for (int i = 0; i < weaponButtons.Length; i++)
         {
-            if (i >= offeredWeapons.Count)
+            if (i >= offeredCards.Count)
             {
                 weaponButtons[i].gameObject.SetActive(false);
                 continue;
@@ -67,38 +71,70 @@ public class LevelUpPanel : MonoBehaviour
 
             weaponButtons[i].gameObject.SetActive(true);
 
-            WeaponData wd = offeredWeapons[i];
+            Card card = offeredCards[i];
             int idx = i;
 
-            // Set icon
-            if (weaponIcons[i] != null)
-                weaponIcons[i].sprite = wd.weaponIcon != null
-                    ? wd.weaponIcon
-                    : wd.projectileSprite;
-
-            if (weaponNames[i] != null)
-                weaponNames[i].text = wd.weaponName;
-
-            if (weaponDescs[i] != null)
-                weaponDescs[i].text = BuildDescription(wd);
+            if (card.type == CardType.Weapon)
+                SetupWeaponCard(i, card.weapon);
+            else
+                SetupAbilityCard(i, card.ability);
 
             weaponButtons[i].onClick.RemoveAllListeners();
-            weaponButtons[i].onClick.AddListener(() => OnWeaponChosen(idx));
+            weaponButtons[i].onClick.AddListener(() => OnCardChosen(idx));
         }
 
-        // Pause and show
         Time.timeScale = 0f;
         panelRoot.SetActive(true);
     }
 
-    void OnWeaponChosen(int index)
+    void SetupWeaponCard(int i, WeaponData wd)
     {
-        if (index >= offeredWeapons.Count) return;
+        // Guard every array access
+        if (weaponIcons != null && i < weaponIcons.Length && weaponIcons[i] != null)
+            weaponIcons[i].sprite = wd.weaponIcon;
 
-        WeaponData chosen = offeredWeapons[index];
-        WeaponManager.Instance.EquipWeapon(chosen);
+        if (weaponNames != null && i < weaponNames.Length && weaponNames[i] != null)
+            weaponNames[i].text = wd.weaponName;
 
-        Debug.Log("[LevelUpPanel] Player chose: " + chosen.weaponName);
+        if (weaponDescs != null && i < weaponDescs.Length && weaponDescs[i] != null)
+        {
+            bool equipped = IsWeaponEquipped(wd);
+            weaponDescs[i].text = equipped
+                ? "(already equipped)"
+                : "DMG " + wd.damage + "  |  " + wd.fireRate + "/s"
+                  + (wd.isAoE ? "  |  AoE" : "")
+                  + (wd.pierce > 1 ? "  |  Pierce " + wd.pierce : "");
+        }
+    }
+
+    void SetupAbilityCard(int i, AbilityData ad)
+    {
+        int currentLevel = AbilityManager.Instance.GetLevel(ad);
+        int nextLevel = currentLevel + 1;
+
+        // Guard every array access
+        if (weaponIcons != null && i < weaponIcons.Length && weaponIcons[i] != null)
+            weaponIcons[i].sprite = ad.abilityIcon;
+
+        if (weaponNames != null && i < weaponNames.Length && weaponNames[i] != null)
+            weaponNames[i].text = ad.abilityName + "  Lv." + nextLevel;
+
+        if (weaponDescs != null && i < weaponDescs.Length && weaponDescs[i] != null)
+            weaponDescs[i].text = ad.description
+                                + "\n+" + ad.GetValue(nextLevel);
+    }
+
+    void OnCardChosen(int index)
+    {
+        if (index >= offeredCards.Count) return;
+
+        Card card = offeredCards[index];
+
+        if (card.type == CardType.Weapon)
+            WeaponManager.Instance.EquipWeapon(card.weapon);
+        else
+            AbilityManager.Instance.UpgradeAbility(card.ability);
+
         HidePanel();
     }
 
@@ -108,58 +144,41 @@ public class LevelUpPanel : MonoBehaviour
         Time.timeScale = 1f;
     }
 
-    List<WeaponData> GetRandomWeaponOffers(int count)
+    List<Card> GetRandomCards(int count)
     {
-        List<WeaponData> all = WeaponManager.Instance.GetAvailableWeaponDatas();
-        List<WeaponData> equipped = WeaponManager.Instance.GetEquippedWeaponDatas();
+        List<Card> pool = new();
 
-        List<WeaponData> unequipped = new();
-        List<WeaponData> equippedList = new();
+        // Add unequipped weapons
+        foreach (var w in WeaponManager.Instance.GetAvailableWeaponDatas())
+            if (!IsWeaponEquipped(w))
+                pool.Add(new Card { type = CardType.Weapon, weapon = w });
 
-        foreach (var w in all)
+        // Add abilities not yet at max level
+        foreach (var a in AbilityManager.Instance.GetAvailableAbilities())
+            pool.Add(new Card { type = CardType.Ability, ability = a });
+
+        // Shuffle
+        for (int i = pool.Count - 1; i > 0; i--)
         {
-            bool isEquipped = false;
-            foreach (var e in equipped)
-                if (e.weaponName == w.weaponName) { isEquipped = true; break; }
-
-            if (isEquipped) equippedList.Add(w);
-            else unequipped.Add(w);
+            int j = Random.Range(0, i + 1);
+            (pool[i], pool[j]) = (pool[j], pool[i]);
         }
 
-        Shuffle(unequipped);
-        Shuffle(equippedList);
-
-        List<WeaponData> result = new();
-
-        foreach (var w in unequipped)
+        // Take up to count
+        List<Card> result = new();
+        foreach (var c in pool)
         {
             if (result.Count >= count) break;
-            result.Add(w);
-        }
-
-        foreach (var w in equippedList)
-        {
-            if (result.Count >= count) break;
-            result.Add(w);
+            result.Add(c);
         }
 
         return result;
     }
 
-    void Shuffle(List<WeaponData> list)
+    bool IsWeaponEquipped(WeaponData wd)
     {
-        for (int i = list.Count - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-            (list[i], list[j]) = (list[j], list[i]);
-        }
-    }
-
-    string BuildDescription(WeaponData wd)
-    {
-        string desc = "DMG " + wd.damage + "  |  " + wd.fireRate + "/s";
-        if (wd.isAoE) desc += "  |  AoE";
-        if (wd.pierce > 1) desc += "  |  Pierce " + wd.pierce;
-        return desc;
+        foreach (var e in WeaponManager.Instance.GetEquippedWeaponDatas())
+            if (e.weaponName == wd.weaponName) return true;
+        return false;
     }
 }

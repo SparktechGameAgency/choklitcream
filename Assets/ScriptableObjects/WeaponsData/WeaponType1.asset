@@ -13,13 +13,15 @@ MonoBehaviour:
   m_Name: WeaponType1
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: ProjectileBullet1
+  weaponIcon: {fileID: 3625043607559282579, guid: 19fb86013d8c24d6cb8410c0aadf30fa, type: 3}
+  projectilePrefab: {fileID: 1742944606706777955, guid: b09dee1091d47aa4489d70d6f6b54fa3, type: 3}
   projectileSprite: {fileID: 3625043607559282579, guid: 19fb86013d8c24d6cb8410c0aadf30fa, type: 3}
-  damage: 20
-  pierce: 1
-  fireRate: 1
   projectileSpeed: 8
   range: 10
   scale: 1
+  damage: 20
+  pierce: 1
+  fireRate: 1
   isAoE: 0
   aoeRadius: 0
   knockback: 0.2

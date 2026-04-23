@@ -1,4 +1,4 @@
-
+// Scripts/Weapons/Projectile.cs
 using UnityEngine;
 
 public class Projectile : MonoBehaviour
@@ -11,7 +11,6 @@ public class Projectile : MonoBehaviour
 
     void Awake() => sr = GetComponent<SpriteRenderer>();
 
-    // Called every time projectile is pulled from pool
     public void Initialize(Vector2 dir, WeaponData weaponData)
     {
         direction = dir;
@@ -19,13 +18,11 @@ public class Projectile : MonoBehaviour
         traveledDistance = 0f;
         pierceCount = 0;
 
-        // Apply sprite and scale
         if (data.projectileSprite != null)
             sr.sprite = data.projectileSprite;
 
         transform.localScale = Vector3.one * data.scale;
 
-        // Rotate to face direction
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
     }
@@ -44,17 +41,23 @@ public class Projectile : MonoBehaviour
     {
         if (!col.CompareTag("Enemy")) return;
 
-        // Deal damage
-        col.GetComponent<EnemyController>()?.TakeDamage(data.damage);
+        // Apply damage multiplier from AbilityManager
+        float multiplier = AbilityManager.Instance != null
+            ? AbilityManager.Instance.DamageMultiplier : 1f;
+
+        col.GetComponent<EnemyController>()
+           ?.TakeDamage(data.damage * multiplier);
 
         // Knockback
         if (data.knockback > 0f)
         {
-            Vector2 dir = (col.transform.position - transform.position).normalized;
-            col.GetComponent<Rigidbody2D>()?.AddForce(dir * data.knockback, ForceMode2D.Impulse);
+            Vector2 knockDir = (col.transform.position
+                             - transform.position).normalized;
+            col.GetComponent<Rigidbody2D>()
+               ?.AddForce(knockDir * data.knockback, ForceMode2D.Impulse);
         }
 
-        // AoE explosion
+        // AoE
         if (data.isAoE && data.aoeRadius > 0f)
         {
             Collider2D[] hits = Physics2D.OverlapCircleAll(
@@ -62,10 +65,10 @@ public class Projectile : MonoBehaviour
                 LayerMask.GetMask("Enemy"));
 
             foreach (var hit in hits)
-                hit.GetComponent<EnemyController>()?.TakeDamage(data.damage * 0.5f);
+                hit.GetComponent<EnemyController>()
+                   ?.TakeDamage(data.damage * multiplier * 0.5f);
         }
 
-        // Pierce — keep going until pierce count is used up
         pierceCount++;
         if (pierceCount >= data.pierce)
             ReturnToPool();
@@ -73,7 +76,7 @@ public class Projectile : MonoBehaviour
 
     void ReturnToPool()
     {
-        ObjectPool.Instance.Return(data.weaponName + "_projectile", gameObject);
+        ObjectPool.Instance.Return(data.PoolTag, gameObject);
     }
 
     void OnDisable() => traveledDistance = 0f;

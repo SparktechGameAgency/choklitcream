@@ -1,4 +1,4 @@
-
+ï»¿// Scripts/Weapons/WeaponController.cs
 using UnityEngine;
 
 public class WeaponController : MonoBehaviour
@@ -15,13 +15,12 @@ public class WeaponController : MonoBehaviour
         fireTimer = 1f / data.fireRate;
 
         Debug.Log("[Weapon] Initialized: " + data.weaponName
-                + " | Player: " + (player != null ? player.name : "NULL"));
+                + " | PoolTag: " + data.PoolTag);
     }
 
     void Update()
     {
-        if (data == null) { Debug.LogError("[Weapon] data is NULL!"); return; }
-        if (player == null) { Debug.LogError("[Weapon] player is NULL!"); return; }
+        if (data == null || player == null) return;
 
         fireTimer -= Time.deltaTime;
         if (fireTimer <= 0f)
@@ -33,12 +32,7 @@ public class WeaponController : MonoBehaviour
 
     void TryShoot()
     {
-        // Use tag instead of layer — avoids layer name mismatch issues
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-
-        Debug.Log("[Weapon] TryShoot — enemies found: " + enemies.Length
-                + " | range: " + data.range
-                + " | player pos: " + player.position);
 
         Transform nearest = null;
         float minDist = Mathf.Infinity;
@@ -54,48 +48,33 @@ public class WeaponController : MonoBehaviour
             }
         }
 
-        if (nearest == null)
-        {
-            Debug.Log("[Weapon] No enemy in range (" + data.range + ")");
-            return;
-        }
+        if (nearest == null) return;
 
-        Debug.Log("[Weapon] Shooting at: " + nearest.name
-                + " dist: " + minDist);
         Shoot(nearest.position);
     }
 
     void Shoot(Vector3 targetPos)
     {
         Vector2 dir = (targetPos - player.position).normalized;
-        string poolTag = data.weaponName + "_projectile";
-
-        Debug.Log("[Weapon] Shoot — poolTag: " + poolTag
-                + " | pool exists: " + ObjectPool.Instance.HasPool(poolTag));
+        string poolTag = data.PoolTag; // â† uses the safe unique tag
 
         if (!ObjectPool.Instance.HasPool(poolTag))
         {
-            Debug.LogError("[Weapon] Pool not found: " + poolTag
-                         + " — WeaponData.weaponName = '" + data.weaponName + "'");
+            Debug.LogError("[Weapon] Pool not found: " + poolTag);
             return;
         }
 
         GameObject proj = ObjectPool.Instance.Get(poolTag, player.position);
-
-        if (proj == null)
-        {
-            Debug.LogError("[Weapon] Pool returned null for: " + poolTag);
-            return;
-        }
+        if (proj == null) return;
 
         Projectile p = proj.GetComponent<Projectile>();
         if (p == null)
         {
-            Debug.LogError("[Weapon] Projectile component missing on prefab!");
+            Debug.LogError("[Weapon] Projectile component missing on prefab: "
+                         + proj.name);
             return;
         }
 
         p.Initialize(dir, data);
-        Debug.Log("[Weapon] Projectile spawned successfully!");
     }
 }
