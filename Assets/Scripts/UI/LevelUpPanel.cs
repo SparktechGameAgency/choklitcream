@@ -10,18 +10,19 @@ public class LevelUpPanel : MonoBehaviour
     [Header("Panel")]
     public GameObject panelRoot;
 
-    [Header("Weapon Cards — exactly 3")]
+    [Header("Cards — exactly 3")]
     public Button[] weaponButtons;
     public Image[] weaponIcons;
     public Text[] weaponNames;
     public Text[] weaponDescs;
 
-    private enum CardType { Weapon, Ability }
+    private enum CardType { RegularWeapon, SpecialWeapon, Ability }
 
     private struct Card
     {
         public CardType type;
-        public WeaponData weapon;
+        public WeaponData regularWeapon;
+        public SpecialWeaponData specialWeapon;
         public AbilityData ability;
     }
 
@@ -31,8 +32,7 @@ public class LevelUpPanel : MonoBehaviour
     void Awake()
     {
         Instance = this;
-        if (panelRoot != null)
-            panelRoot.SetActive(false);
+        if (panelRoot != null) panelRoot.SetActive(false);
     }
 
     void Update()
@@ -41,13 +41,13 @@ public class LevelUpPanel : MonoBehaviour
         {
             PlayerXP.Instance.onLevelUp.AddListener(OnLevelUp);
             subscribed = true;
-            Debug.Log("[LevelUpPanel] Subscribed to PlayerXP!");
+            Debug.Log("[LevelUpPanel] Subscribed!");
         }
     }
 
     void OnLevelUp(int newLevel)
     {
-        Debug.Log("[LevelUpPanel] Level up! Level: " + newLevel);
+        Debug.Log("[LevelUpPanel] Level up → " + newLevel);
         ShowPanel();
     }
 
@@ -57,7 +57,7 @@ public class LevelUpPanel : MonoBehaviour
 
         if (offeredCards.Count == 0)
         {
-            Debug.Log("[LevelUpPanel] No cards available — skipping.");
+            Debug.Log("[LevelUpPanel] Nothing to offer — skipping.");
             return;
         }
 
@@ -74,10 +74,18 @@ public class LevelUpPanel : MonoBehaviour
             Card card = offeredCards[i];
             int idx = i;
 
-            if (card.type == CardType.Weapon)
-                SetupWeaponCard(i, card.weapon);
-            else
-                SetupAbilityCard(i, card.ability);
+            switch (card.type)
+            {
+                case CardType.RegularWeapon:
+                    SetupRegularWeaponCard(i, card.regularWeapon);
+                    break;
+                case CardType.SpecialWeapon:
+                    SetupSpecialWeaponCard(i, card.specialWeapon);
+                    break;
+                case CardType.Ability:
+                    SetupAbilityCard(i, card.ability);
+                    break;
+            }
 
             weaponButtons[i].onClick.RemoveAllListeners();
             weaponButtons[i].onClick.AddListener(() => OnCardChosen(idx));
@@ -87,24 +95,28 @@ public class LevelUpPanel : MonoBehaviour
         panelRoot.SetActive(true);
     }
 
-    void SetupWeaponCard(int i, WeaponData wd)
+    // ── Card setup ─────────────────────────────────────────────
+
+    void SetupRegularWeaponCard(int i, WeaponData wd)
     {
-        // Guard every array access
-        if (weaponIcons != null && i < weaponIcons.Length && weaponIcons[i] != null)
-            weaponIcons[i].sprite = wd.weaponIcon;
+        SetIcon(i, wd.weaponIcon);
+        SetName(i, wd.weaponName);
+        SetDesc(i, "DMG " + wd.damage
+                 + "  |  " + wd.fireRate + "/s"
+                 + (wd.isAoE ? "  |  AoE" : "")
+                 + (wd.pierce > 1 ? "  |  Pierce " + wd.pierce : ""));
+    }
 
-        if (weaponNames != null && i < weaponNames.Length && weaponNames[i] != null)
-            weaponNames[i].text = wd.weaponName;
+    void SetupSpecialWeaponCard(int i, SpecialWeaponData sd)
+    {
+        int currentLevel = SpecialWeaponManager.Instance.GetLevel(sd);
+        int nextLevel = currentLevel + 1;
 
-        if (weaponDescs != null && i < weaponDescs.Length && weaponDescs[i] != null)
-        {
-            bool equipped = IsWeaponEquipped(wd);
-            weaponDescs[i].text = equipped
-                ? "(already equipped)"
-                : "DMG " + wd.damage + "  |  " + wd.fireRate + "/s"
-                  + (wd.isAoE ? "  |  AoE" : "")
-                  + (wd.pierce > 1 ? "  |  Pierce " + wd.pierce : "");
-        }
+        SetIcon(i, sd.weaponIcon);
+        SetName(i, sd.weaponName + "  Lv." + nextLevel);
+        SetDesc(i, sd.description
+               + "\nDMG " + sd.GetDamage(nextLevel)
+               + "  |  Count: " + sd.GetCount(nextLevel));
     }
 
     void SetupAbilityCard(int i, AbilityData ad)
@@ -112,17 +124,30 @@ public class LevelUpPanel : MonoBehaviour
         int currentLevel = AbilityManager.Instance.GetLevel(ad);
         int nextLevel = currentLevel + 1;
 
-        // Guard every array access
-        if (weaponIcons != null && i < weaponIcons.Length && weaponIcons[i] != null)
-            weaponIcons[i].sprite = ad.abilityIcon;
-
-        if (weaponNames != null && i < weaponNames.Length && weaponNames[i] != null)
-            weaponNames[i].text = ad.abilityName + "  Lv." + nextLevel;
-
-        if (weaponDescs != null && i < weaponDescs.Length && weaponDescs[i] != null)
-            weaponDescs[i].text = ad.description
-                                + "\n+" + ad.GetValue(nextLevel);
+        SetIcon(i, ad.abilityIcon);
+        SetName(i, ad.abilityName + "  Lv." + nextLevel);
+        SetDesc(i, ad.description + "\n+" + ad.GetValue(nextLevel));
     }
+
+    void SetIcon(int i, Sprite s)
+    {
+        if (weaponIcons != null && i < weaponIcons.Length && weaponIcons[i] != null)
+            weaponIcons[i].sprite = s;
+    }
+
+    void SetName(int i, string text)
+    {
+        if (weaponNames != null && i < weaponNames.Length && weaponNames[i] != null)
+            weaponNames[i].text = text;
+    }
+
+    void SetDesc(int i, string text)
+    {
+        if (weaponDescs != null && i < weaponDescs.Length && weaponDescs[i] != null)
+            weaponDescs[i].text = text;
+    }
+
+    // ── Card chosen ────────────────────────────────────────────
 
     void OnCardChosen(int index)
     {
@@ -130,10 +155,18 @@ public class LevelUpPanel : MonoBehaviour
 
         Card card = offeredCards[index];
 
-        if (card.type == CardType.Weapon)
-            WeaponManager.Instance.EquipWeapon(card.weapon);
-        else
-            AbilityManager.Instance.UpgradeAbility(card.ability);
+        switch (card.type)
+        {
+            case CardType.RegularWeapon:
+                WeaponManager.Instance.EquipWeapon(card.regularWeapon);
+                break;
+            case CardType.SpecialWeapon:
+                SpecialWeaponManager.Instance.EquipOrUpgrade(card.specialWeapon);
+                break;
+            case CardType.Ability:
+                AbilityManager.Instance.UpgradeAbility(card.ability);
+                break;
+        }
 
         HidePanel();
     }
@@ -144,16 +177,22 @@ public class LevelUpPanel : MonoBehaviour
         Time.timeScale = 1f;
     }
 
+    // ── Card pool building ─────────────────────────────────────
+
     List<Card> GetRandomCards(int count)
     {
         List<Card> pool = new();
 
-        // Add unequipped weapons
+        // Regular weapons not yet equipped
         foreach (var w in WeaponManager.Instance.GetAvailableWeaponDatas())
-            if (!IsWeaponEquipped(w))
-                pool.Add(new Card { type = CardType.Weapon, weapon = w });
+            if (!IsRegularWeaponEquipped(w))
+                pool.Add(new Card { type = CardType.RegularWeapon, regularWeapon = w });
 
-        // Add abilities not yet at max level
+        // Special weapons not yet at max level
+        foreach (var sw in SpecialWeaponManager.Instance.GetAvailableWeapons())
+            pool.Add(new Card { type = CardType.SpecialWeapon, specialWeapon = sw });
+
+        // Abilities not yet at max level
         foreach (var a in AbilityManager.Instance.GetAvailableAbilities())
             pool.Add(new Card { type = CardType.Ability, ability = a });
 
@@ -175,7 +214,7 @@ public class LevelUpPanel : MonoBehaviour
         return result;
     }
 
-    bool IsWeaponEquipped(WeaponData wd)
+    bool IsRegularWeaponEquipped(WeaponData wd)
     {
         foreach (var e in WeaponManager.Instance.GetEquippedWeaponDatas())
             if (e.weaponName == wd.weaponName) return true;

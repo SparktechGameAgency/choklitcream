@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d5439149ad4f0f438289114ce746509, type: 3}
+  m_Name: SpecialWeaponData 1
+  m_EditorClassIdentifier: Assembly-CSharp::SpecialWeaponData
+  weaponName: Grenade
+  weaponIcon: {fileID: 0}
+  description: Grenade
+  weaponType: 1
+  countPerLevel: 0100000002000000030000000400000005000000
+  damagePerLevel:
+  - 30
+  - 45
+  - 60
+  - 80
+  - 110
+  cooldownPerLevel:
+  - 3
+  - 2.5
+  - 2
+  - 1.5
+  - 1
+  orbitRadius: 3
+  orbitSpeed: 180
+  sawPause: 1
+  grenadeSpeed: 4
+  explosionDelay: 1
+  explosionRadius: 2
+  beamRange: 3
+  beamWidth: 0.08
+  beamDuration: 0.4

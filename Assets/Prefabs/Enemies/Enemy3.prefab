@@ -170,5 +170,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyController
   data: {fileID: 0}
+  damageCooldown: 1
   hitColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.2

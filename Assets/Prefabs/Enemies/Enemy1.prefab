@@ -85,7 +85,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 75f5f34dc1b5347e0b8351032682f224, type: 3}
-  m_Color: {r: 0.8156863, g: 0.1254902, b: 0.5647059, a: 1}
+  m_Color: {r: 0.9716981, g: 0.23375754, b: 0.78493243, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -170,3 +170,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyController
   data: {fileID: 11400000, guid: ffd87d5070afd6e42abb0b3460005dbd, type: 2}
+  damageCooldown: 1
+  hitColor: {r: 1, g: 1, b: 1, a: 1}
+  flashDuration: 0.2

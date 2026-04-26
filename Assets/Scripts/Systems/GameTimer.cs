@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -8,7 +7,7 @@ public class GameTimer : MonoBehaviour
     public float survivalDuration = 600f; // 10 min — change in Inspector
 
     [Header("Events")]
-    public UnityEvent onTimerComplete; // hook this to your win screen
+    public UnityEvent onTimerComplete; // optional extra hook in Inspector
 
     public float TimeRemaining { get; private set; }
     public bool IsRunning { get; private set; }
@@ -32,14 +31,19 @@ public class GameTimer : MonoBehaviour
         {
             TimeRemaining = 0;
             IsRunning = false;
+
+            // Show the You Win panel
+            GameUIManager.Instance?.ShowWinPanel();
+
+            // Fire the inspector event too (optional hooks)
             onTimerComplete?.Invoke();
         }
     }
 
-    // Call this when player dies
+    // Call this when the player dies so the timer stops
     public void StopTimer() => IsRunning = false;
 
-    // Helper: returns "9:45" style string for the UI
+    // Returns "9:45" style string for the UI
     public string GetFormattedTime()
     {
         int minutes = Mathf.FloorToInt(TimeRemaining / 60);

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class PlayerHealth : MonoBehaviour
@@ -6,39 +6,57 @@ public class PlayerHealth : MonoBehaviour
     public float maxHealth = 100f;
     public float currentHealth;
 
-    [Header("Hit-Stop (Slow-Mo on Damage)")]
-    [Tooltip("How slow time gets on hit. 0.05 = almost frozen, 0.2 = noticeable slowdown")]
-    public float hitStopTimeScale = 0.05f;
-    [Tooltip("How long the slow-mo lasts in REAL seconds")]
-    public float hitStopDuration = 0.08f;
+    [Header("Hit Flash (Stun Effect)")]
+    public Color hitColor = new Color(1f, 0.3f, 0.3f, 1f);  // red tint
+    public float flashDuration = 0.15f;
 
-    private bool hitStopActive = false;
+    private SpriteRenderer sr;
+    private Color originalColor;
+    private Coroutine flashCoroutine;
+
+    void Awake()
+    {
+        sr = GetComponent<SpriteRenderer>();
+        if (sr != null) originalColor = sr.color;
+    }
 
     void Start() => currentHealth = maxHealth;
 
     public void TakeDamage(float amount)
     {
-        currentHealth -= amount;
+        if (amount <= 0) return;
 
-        // --- Camera shake ---
+        currentHealth -= amount;
+        currentHealth = Mathf.Max(currentHealth, 0f);
+
+        // Show red popup on player
+        DamagePopup.Spawn(transform.position + Vector3.up * 0.5f,
+                          amount, isPlayer: true);
+
+        // ── Camera shake ───────────────────────────────────────
         CameraFollow.Instance?.Shake();
 
-        // --- Hit-stop (slow-mo freeze) ---
-        if (!hitStopActive)
-            StartCoroutine(HitStop());
+        // ── Player hit flash (stun visual) ────────────────────
+        if (sr != null)
+        {
+            if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+            flashCoroutine = StartCoroutine(HitFlash());
+        }
 
         if (currentHealth <= 0) Die();
     }
 
-    IEnumerator HitStop()
+    IEnumerator HitFlash()
     {
-        hitStopActive = true;
-        Time.timeScale = hitStopTimeScale;
+        sr.color = hitColor;
+        yield return new WaitForSeconds(flashDuration);
+        sr.color = originalColor;
+        flashCoroutine = null;
+    }
 
-        yield return new WaitForSecondsRealtime(hitStopDuration);
-
-        Time.timeScale = 1f;
-        hitStopActive = false;
+    public void Heal(float amount)
+    {
+        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
     }
 
     void Die()
@@ -46,5 +64,8 @@ public class PlayerHealth : MonoBehaviour
         GameTimer.Instance?.StopTimer();
         Debug.Log("Player died!");
         gameObject.SetActive(false);
+
+        // Show the Game Over panel
+        GameUIManager.Instance?.ShowGameOverPanel();
     }
 }

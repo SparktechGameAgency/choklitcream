@@ -1194,9 +1194,6 @@ MonoBehaviour:
   - data: {fileID: 11400000, guid: 623ed69904c90af4f9aef4efab34bfe9, type: 2}
     unlockAtTime: 20
     spawnWeight: 0.3
-  - data: {fileID: 11400000, guid: 1d31f00f53ea05b4685774808ec36e0e, type: 2}
-    unlockAtTime: 30
-    spawnWeight: 0.2
   player: {fileID: 477246175}
   spawnRadius: 12
   baseSpawnInterval: 2
@@ -1317,17 +1314,11 @@ MonoBehaviour:
   - tag: Hard
     prefab: {fileID: 7716082757887306679, guid: bb3a504951799894c9cb609d74b33d08, type: 3}
     initialSize: 15
-  - tag: Hard Core
-    prefab: {fileID: 7716082757887306679, guid: bb347b25e5f93b04086263ebcdd3e012, type: 3}
-    initialSize: 15
   - tag: XPOrb
     prefab: {fileID: 5384310748904464500, guid: 336ee10faf038ca488d3d29ad6a2275a, type: 3}
     initialSize: 50
-  - tag: HealthOrb
-    prefab: {fileID: 4949077449491283784, guid: f4db10eaf5a804f4fa03cafdbfa0b847, type: 3}
-    initialSize: 5
   - tag: DamagePopup
-    prefab: {fileID: 5384310748904464500, guid: e30061f71c50f86489f329f9844e58f7, type: 3}
+    prefab: {fileID: 4949077449491283784, guid: f4db10eaf5a804f4fa03cafdbfa0b847, type: 3}
     initialSize: 30
 --- !u!4 &565696697
 Transform:
@@ -1683,13 +1674,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 14af8f78bd5f04443ba19a0b4b000a13, type: 2}
   - {fileID: 11400000, guid: 56d1fca8a299d4f409f88f0d08eb5e44, type: 2}
   - {fileID: 11400000, guid: c9aa988f2ae11e049895a8e28f157bff, type: 2}
-  - {fileID: 11400000, guid: 1b1ec732bbfb9464f93c70d7799b0e05, type: 2}
-  - {fileID: 11400000, guid: 8ae257319db79184abbe6a8f26d4a6ee, type: 2}
   player: {fileID: 477246175}
   sawPrefab: {fileID: 3501838793080548686, guid: cddb6d5d6ee83fe4a821010b6fd2ec76, type: 3}
   grenadePrefab: {fileID: 8290829346632427214, guid: bba4ef29a4f84914c92afa1402a8954c, type: 3}
-  axePrefab: {fileID: 7025557854879260366, guid: 7b4ca796fc06b4548acfd3abb6f39ccc, type: 3}
-  boomerangPrefab: {fileID: 2762667039966324893, guid: 395293fb35ca9294599faecb0412e744, type: 3}
 --- !u!4 &765986091
 Transform:
   m_ObjectHideFlags: 0
@@ -1754,54 +1741,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TimerUI
   timerText: {fileID: 1785910104}
---- !u!1 &854567917
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 854567919}
-  - component: {fileID: 854567918}
-  m_Layer: 0
-  m_Name: HealthOrbSpawner
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &854567918
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 854567917}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1264988cc8781949a2fb6bf380a0c8c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HealthOrbSpawner
-  killsPerOrb: 15
-  killVariance: 5
-  healAmount: 50
-  spawnRadius: 3
---- !u!4 &854567919
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 854567917}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.33928, y: -1.18058, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &854724271
 GameObject:
   m_ObjectHideFlags: 0
@@ -4187,7 +4126,6 @@ SceneRoots:
   - {fileID: 565696697}
   - {fileID: 1247868872}
   - {fileID: 523800799}
-  - {fileID: 854567919}
   - {fileID: 486828559}
   - {fileID: 293769718}
   - {fileID: 30615386}
