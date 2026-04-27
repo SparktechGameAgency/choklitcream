@@ -1,4 +1,5 @@
-﻿using System.Collections;
+
+using System.Collections;
 using UnityEngine;
 
 public class PlayerHealth : MonoBehaviour
@@ -6,8 +7,15 @@ public class PlayerHealth : MonoBehaviour
     public float maxHealth = 100f;
     public float currentHealth;
 
-    [Header("Hit Flash (Stun Effect)")]
-    public Color hitColor = new Color(1f, 0.3f, 0.3f, 1f);  // red tint
+    /// <summary>
+    /// Flat damage reduction per hit. Set automatically by AbilityManager
+    /// when the Armor ability is upgraded, but can also be edited in the Inspector.
+    /// </summary>
+    [Header("Armor")]
+    public float armor = 0f;
+
+    [Header("Hit Flash")]
+    public Color hitColor = new Color(1f, 0.3f, 0.3f, 1f);
     public float flashDuration = 0.15f;
 
     private SpriteRenderer sr;
@@ -26,17 +34,16 @@ public class PlayerHealth : MonoBehaviour
     {
         if (amount <= 0) return;
 
-        currentHealth -= amount;
+        // Apply flat armor reduction � minimum 1 damage always gets through
+        float reducedAmount = Mathf.Max(1f, amount - armor);
+
+        currentHealth -= reducedAmount;
         currentHealth = Mathf.Max(currentHealth, 0f);
 
-        // Show red popup on player
         DamagePopup.Spawn(transform.position + Vector3.up * 0.5f,
-                          amount, isPlayer: true);
-
-        // ── Camera shake ───────────────────────────────────────
+                          reducedAmount, isPlayer: true);
         CameraFollow.Instance?.Shake();
 
-        // ── Player hit flash (stun visual) ────────────────────
         if (sr != null)
         {
             if (flashCoroutine != null) StopCoroutine(flashCoroutine);
@@ -62,10 +69,7 @@ public class PlayerHealth : MonoBehaviour
     void Die()
     {
         GameTimer.Instance?.StopTimer();
-        Debug.Log("Player died!");
         gameObject.SetActive(false);
-
-        // Show the Game Over panel
         GameUIManager.Instance?.ShowGameOverPanel();
     }
 }

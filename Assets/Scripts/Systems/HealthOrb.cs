@@ -1,54 +1,51 @@
-﻿
+// Scripts/Systems/HealthOrb.cs
 using UnityEngine;
 
 public class HealthOrb : MonoBehaviour
 {
-    internal float healAmount;
-    internal bool attracting = false;
-    internal float attractSpeed = 0f;
-    internal Transform player;
+    internal float     healAmount;
+    internal bool      attracting   = false;
+    internal float     attractSpeed = 0f;
 
     public float minAttractSpeed = 5f;
     public float maxAttractSpeed = 12f;
-    public float attractRadius = 3f;
+    public float attractRadius   = 3f;
+
+    private Transform  player;
+    private bool       collected = false;
 
     private static readonly string POOL_TAG = "HealthOrb";
 
-    // ── Static spawn helper ──────────────────────────────────
-
     public static void Spawn(Vector3 position, float amount)
     {
-        if (!ObjectPool.Instance.HasPool(POOL_TAG))
-        {
-            Debug.LogError("[HealthOrb] Pool not registered! "
-                         + "Add HealthOrb pool to ObjectPool Inspector.");
-            return;
-        }
+        if (!ObjectPool.Instance.HasPool(POOL_TAG)) return;
 
         GameObject obj = ObjectPool.Instance.Get(POOL_TAG, position);
         if (obj == null) return;
 
         HealthOrb orb = obj.GetComponent<HealthOrb>();
-        if (orb == null)
-        {
-            Debug.LogError("[HealthOrb] HealthOrb script missing on prefab!");
-            return;
-        }
+        if (orb == null) return;
 
-        orb.healAmount = amount;
-        orb.attracting = false;
+        orb.healAmount   = amount;
+        orb.attracting   = false;
+        orb.collected    = false;
         orb.attractSpeed = orb.minAttractSpeed;
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null) orb.player = playerObj.transform;
-
-        Debug.Log("[HealthOrb] Spawned at " + position
-                + " | Heal amount: " + amount);
+        if (playerObj != null)
+            orb.player = playerObj.transform;
     }
 
     void Update()
     {
-        if (player == null) return;
+        if (collected) return;
+
+        if (player == null)
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) player = p.transform;
+            return;
+        }
 
         float dist = Vector2.Distance(transform.position, player.position);
 
@@ -57,7 +54,6 @@ public class HealthOrb : MonoBehaviour
 
         if (attracting)
         {
-            // Speed up as it gets closer
             attractSpeed = Mathf.Lerp(maxAttractSpeed, minAttractSpeed,
                                       dist / attractRadius);
 
@@ -72,16 +68,13 @@ public class HealthOrb : MonoBehaviour
 
     void Collect()
     {
-        PlayerHealth ph = player.GetComponent<PlayerHealth>();
-        if (ph != null)
-        {
-            float actual = Mathf.Min(healAmount,
-                           ph.maxHealth - ph.currentHealth);
-            ph.Heal(healAmount);
+        if (collected) return;
+        collected = true;
 
-            Debug.Log("[HealthOrb] Collected! Healed: " + actual
-                    + " | Current HP: " + ph.currentHealth
-                    + " / " + ph.maxHealth);
+        if (player != null)
+        {
+            PlayerHealth ph = player.GetComponent<PlayerHealth>();
+            if (ph != null) ph.Heal(healAmount);
         }
 
         ObjectPool.Instance.Return(POOL_TAG, gameObject);
@@ -89,12 +82,18 @@ public class HealthOrb : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D col)
     {
-        if (col.CompareTag("Player")) Collect();
+        if (collected) return;
+        if (!col.CompareTag("Player")) return;
+
+        player = col.transform;
+        Collect();
     }
 
     void OnDisable()
     {
-        attracting = false;
+        attracting   = false;
+        collected    = false;
         attractSpeed = minAttractSpeed;
+        player       = null;
     }
 }

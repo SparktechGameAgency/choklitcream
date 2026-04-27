@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 public enum AbilityType
@@ -7,7 +6,10 @@ public enum AbilityType
     AddMoveSpeed,
     AddMagnet,
     AddXPMultiplier,
-    AddHealth           
+    AddHealth,
+    AddArmor,        // Flat damage reduction per hit
+    AddFireRate,     // Multiplier applied to all weapon fire rates
+    AddXPBooster     // Multiplier applied to all XP gained
 }
 
 [CreateAssetMenu(fileName = "AbilityData", menuName = "CatSurvivors/Ability Data")]
@@ -25,6 +27,7 @@ public class AbilityData : ScriptableObject
     public float[] valuesPerLevel = new float[5];
 
     public int MaxLevel => valuesPerLevel.Length;
+
     public float GetValue(int level)
         => valuesPerLevel[Mathf.Clamp(level - 1, 0, valuesPerLevel.Length - 1)];
 }

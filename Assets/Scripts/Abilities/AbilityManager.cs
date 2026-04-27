@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,19 +15,29 @@ public class AbilityManager : MonoBehaviour
     private PlayerHealth playerHealth;
 
     [Header("Base XP attract radius")]
-    [Tooltip("This is the starting attract radius — tweak it here")]
+    [Tooltip("Starting attract radius — tweak here")]
     public float baseAttractRadius = 3f;
 
-    private float baseMoveSpeed = 5f;
+    // ── Public read-only stats ──────────────────────────────────────────────
 
     public float DamageMultiplier { get; private set; } = 1f;
     public float XPMultiplier { get; private set; } = 1f;
     public float AttractRadius { get; private set; }
 
+    /// <summary>Flat damage subtracted from every hit before it is applied.</summary>
+    public float ArmorValue { get; private set; } = 0f;
+
+    /// <summary>Multiplier on all weapon fire rates (e.g. 1.5 = 50% faster).</summary>
+    public float FireRateMultiplier { get; private set; } = 1f;
+
+    /// <summary>Multiplier on all XP gained from orbs.</summary>
+    public float XPBoostMultiplier { get; private set; } = 1f;
+
+    // ───────────────────────────────────────────────────────────────────────
+
     void Awake()
     {
         Instance = this;
-
         foreach (var a in allAbilities)
             abilityLevels[a.abilityName] = 0;
     }
@@ -36,15 +46,8 @@ public class AbilityManager : MonoBehaviour
     {
         playerMovement = FindObjectOfType<PlayerMovement>();
         playerHealth = FindObjectOfType<PlayerHealth>();
-
-        if (playerMovement != null)
-            baseMoveSpeed = playerMovement.moveSpeed;
-
-        // Set starting attract radius from Inspector value
         AttractRadius = baseAttractRadius;
     }
-
-    // ── Public API ─────────────────────────────────────────────
 
     public int GetLevel(AbilityData data)
         => abilityLevels.ContainsKey(data.abilityName)
@@ -64,24 +67,12 @@ public class AbilityManager : MonoBehaviour
     public void UpgradeAbility(AbilityData data)
     {
         int currentLevel = GetLevel(data);
-
-        if (currentLevel >= data.MaxLevel)
-        {
-            Debug.Log("[Ability] " + data.abilityName + " already max level!");
-            return;
-        }
+        if (currentLevel >= data.MaxLevel) return;
 
         int newLevel = currentLevel + 1;
         abilityLevels[data.abilityName] = newLevel;
-
         ApplyAbility(data, newLevel);
-
-        Debug.Log("[Ability] " + data.abilityName
-                + " → Level " + newLevel
-                + " | Value: " + data.GetValue(newLevel));
     }
-
-    // ── Apply Effects ──────────────────────────────────────────
 
     void ApplyAbility(AbilityData data, int level)
     {
@@ -89,25 +80,22 @@ public class AbilityManager : MonoBehaviour
 
         switch (data.abilityType)
         {
+            // ── Existing abilities ─────────────────────────────────────────
             case AbilityType.AddDamage:
                 DamageMultiplier = value;
-                Debug.Log("[Ability] Damage multiplier: " + DamageMultiplier);
                 break;
 
             case AbilityType.AddMoveSpeed:
                 if (playerMovement != null)
                     playerMovement.moveSpeed = value;
-                Debug.Log("[Ability] Move speed: " + value);
                 break;
 
             case AbilityType.AddMagnet:
                 AttractRadius = value;
-                Debug.Log("[Ability] Attract radius: " + value);
                 break;
 
             case AbilityType.AddXPMultiplier:
                 XPMultiplier = value;
-                Debug.Log("[Ability] XP multiplier: " + value);
                 break;
 
             case AbilityType.AddHealth:
@@ -115,9 +103,29 @@ public class AbilityManager : MonoBehaviour
                 {
                     playerHealth.maxHealth += value;
                     playerHealth.currentHealth += value;
-                    Debug.Log("[Ability] Max health increased by "
-                            + value + " → " + playerHealth.maxHealth);
                 }
+                break;
+
+            // ── New abilities ──────────────────────────────────────────────
+
+            // Armor: flat damage absorbed per hit.
+            // valuesPerLevel example: { 2, 4, 6, 9, 12 }
+            case AbilityType.AddArmor:
+                ArmorValue = value;
+                if (playerHealth != null)
+                    playerHealth.armor = ArmorValue;
+                break;
+
+            // Fire Rate: multiplier on every weapon's fire rate.
+            // valuesPerLevel example: { 1.2, 1.4, 1.6, 1.85, 2.1 }
+            case AbilityType.AddFireRate:
+                FireRateMultiplier = value;
+                break;
+
+            // XP Booster: multiplier on all XP picked up.
+            // valuesPerLevel example: { 1.25, 1.5, 1.75, 2.0, 2.5 }
+            case AbilityType.AddXPBooster:
+                XPBoostMultiplier = value;
                 break;
         }
     }

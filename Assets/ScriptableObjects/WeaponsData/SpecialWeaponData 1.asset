@@ -35,6 +35,15 @@ MonoBehaviour:
   grenadeSpeed: 4
   explosionDelay: 1
   explosionRadius: 2
-  beamRange: 3
-  beamWidth: 0.08
+  beamRange: 1.5
+  beamWidth: 0.2
   beamDuration: 0.4
+  axeArcHeight: 3.5
+  axeTravelDist: 4
+  axeTotalTime: 1.2
+  axeSpread: 20
+  axeSpinSpeed: 600
+  boomerangMaxDist: 5
+  boomerangSpeed: 6
+  boomerangSpinSpeed: 400
+  boomerangCurveAngle: 80

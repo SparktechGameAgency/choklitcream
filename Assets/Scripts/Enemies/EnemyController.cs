@@ -1,4 +1,5 @@
-﻿using System.Collections;
+// Scripts/Enemies/EnemyController.cs
+using System.Collections;
 using UnityEngine;
 
 public class EnemyController : MonoBehaviour
@@ -6,55 +7,50 @@ public class EnemyController : MonoBehaviour
     [HideInInspector] public EnemyData data;
 
     private Transform player;
-    private float currentHealth;
-    private float maxHealth;
-    private float currentDamage;
-    private float currentSpeed;
-    private bool isDead = false;
+    private float     currentHealth;
+    private float     maxHealth;
+    private float     currentDamage;
+    private float     currentSpeed;
+    private bool      isDead = false;
 
-    private Rigidbody2D rb;
+    private Rigidbody2D    rb;
     private SpriteRenderer sr;
 
     [Header("Contact Damage")]
-    public float damageCooldown = 1f;          // seconds between each damage tick
-    private float damageTimer = 0f;
+    public float damageCooldown = 1f;
+    private float damageTimer   = 0f;
 
     [Header("Hit Flash")]
-    public Color hitColor = Color.white;
+    public Color hitColor      = Color.white;
     public float flashDuration = 0.2f;
 
-    private Color originalColor;
+    private Color     originalColor;
     private Coroutine flashCoroutine;
 
     void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
-        sr = GetComponent<SpriteRenderer>();
+        rb            = GetComponent<Rigidbody2D>();
+        sr            = GetComponent<SpriteRenderer>();
         originalColor = sr.color;
     }
 
     public void Initialize(Transform playerTransform, EnemyData enemyData)
     {
-        if (enemyData == null)
-        {
-            Debug.LogError("[Enemy] Initialize called with null EnemyData!");
-            return;
-        }
+        if (enemyData == null) return;
 
-        player = playerTransform;
-        data = enemyData;
-        isDead = false;
-        damageTimer = damageCooldown; // first contact hit fires immediately
+        player        = playerTransform;
+        data          = enemyData;
+        isDead        = false;
+        damageTimer   = damageCooldown;
         currentDamage = data.damage;
-        currentSpeed = data.moveSpeed;
-        maxHealth = data.maxHealth;
+        currentSpeed  = data.moveSpeed;
+        maxHealth     = data.maxHealth;
         currentHealth = maxHealth;
+        sr.color      = originalColor;
 
-        sr.color = originalColor;
         if (data.sprite != null)
             sr.sprite = data.sprite;
 
-        // Apply current difficulty bonus immediately on spawn
         if (DifficultyScaler.Instance != null)
             ApplyDifficultyBonus(
                 DifficultyScaler.Instance.BonusDamage,
@@ -62,23 +58,21 @@ public class EnemyController : MonoBehaviour
                 DifficultyScaler.Instance.BonusHealth);
     }
 
-    // Called by DifficultyScaler every 2 minutes
     public void ApplyDifficultyBonus(float bonusDamage,
                                      float bonusSpeed,
                                      float bonusHealth)
     {
         if (data == null) return;
 
-        currentDamage = data.damage + bonusDamage;
-        currentSpeed = data.moveSpeed + bonusSpeed;
+        currentDamage = data.damage    + bonusDamage;
+        currentSpeed  = data.moveSpeed + bonusSpeed;
 
         float newMaxHealth = data.maxHealth + bonusHealth;
 
-        // If health increased scale current health proportionally
         if (newMaxHealth > maxHealth)
         {
-            float ratio = currentHealth / maxHealth;
-            maxHealth = newMaxHealth;
+            float ratio   = currentHealth / maxHealth;
+            maxHealth     = newMaxHealth;
             currentHealth = maxHealth * ratio;
         }
     }
@@ -88,8 +82,8 @@ public class EnemyController : MonoBehaviour
         if (isDead || player == null || data == null) return;
 
         Vector2 dir = (player.position - transform.position).normalized;
-        rb.linearVelocity = dir * currentSpeed; // ← uses scaled speed
-        sr.flipX = dir.x < 0;
+        rb.linearVelocity = dir * currentSpeed;
+        sr.flipX          = dir.x < 0;
     }
 
     public void TakeDamage(float amount)
@@ -98,7 +92,6 @@ public class EnemyController : MonoBehaviour
 
         currentHealth -= amount;
 
-        // Show yellow popup above enemy
         DamagePopup.Spawn(transform.position + Vector3.up * 0.5f,
                           amount, isPlayer: false);
 
@@ -126,7 +119,7 @@ public class EnemyController : MonoBehaviour
             flashCoroutine = null;
         }
 
-        sr.color = originalColor;
+        sr.color          = originalColor;
         rb.linearVelocity = Vector2.zero;
 
         KillTracker.Instance?.RegisterKill();
@@ -144,24 +137,20 @@ public class EnemyController : MonoBehaviour
 
         if (col.gameObject.CompareTag("Player"))
         {
-            // Advance the timer — fires once every damageCooldown seconds
             damageTimer += Time.deltaTime;
-
             if (damageTimer >= damageCooldown)
             {
                 damageTimer = 0f;
-                // Pass full currentDamage so popup shows the real number (e.g. -8)
                 col.gameObject.GetComponent<PlayerHealth>()
                     ?.TakeDamage(currentDamage);
             }
         }
     }
 
-    // Reset timer when enemy leaves contact so it can't instantly tick again on re-entry
     void OnCollisionExit2D(Collision2D col)
     {
         if (col.gameObject.CompareTag("Player"))
-            damageTimer = damageCooldown; // re-entry hits immediately too
+            damageTimer = damageCooldown;
     }
 
     void OnDisable()

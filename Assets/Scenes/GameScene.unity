@@ -533,6 +533,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c2991bd0b1dcbbb43a8a099f7251c96e, type: 2}
   - {fileID: 11400000, guid: 5d2f58f40586f184497250d177c26ccc, type: 2}
   - {fileID: 11400000, guid: 596ca22cf5bff6349b65dc351b7f0413, type: 2}
+  - {fileID: 11400000, guid: 1a7d60fb52639254a86d691fe81bc4cb, type: 2}
+  - {fileID: 11400000, guid: caeebfb61065dc443bc8ac7f8245ea76, type: 2}
+  - {fileID: 11400000, guid: 4ad2450d36fd26345906f6aac85e26cd, type: 2}
   baseAttractRadius: 2
 --- !u!4 &293769718
 Transform:
@@ -719,6 +722,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHealth: 100
   currentHealth: 0
+  armor: 0
   hitColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.2
 --- !u!114 &477246171
@@ -1324,10 +1328,10 @@ MonoBehaviour:
     prefab: {fileID: 5384310748904464500, guid: 336ee10faf038ca488d3d29ad6a2275a, type: 3}
     initialSize: 50
   - tag: HealthOrb
-    prefab: {fileID: 4949077449491283784, guid: f4db10eaf5a804f4fa03cafdbfa0b847, type: 3}
+    prefab: {fileID: 5384310748904464500, guid: e30061f71c50f86489f329f9844e58f7, type: 3}
     initialSize: 5
   - tag: DamagePopup
-    prefab: {fileID: 5384310748904464500, guid: e30061f71c50f86489f329f9844e58f7, type: 3}
+    prefab: {fileID: 4949077449491283784, guid: f4db10eaf5a804f4fa03cafdbfa0b847, type: 3}
     initialSize: 30
 --- !u!4 &565696697
 Transform:

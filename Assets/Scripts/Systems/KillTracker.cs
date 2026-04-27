@@ -1,4 +1,4 @@
-
+// Scripts/Systems/KillTracker.cs
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -12,14 +12,13 @@ public class KillTracker : MonoBehaviour
 
     void Awake()
     {
-        Instance = this;
+        Instance  = this;
         KillCount = 0;
     }
 
     public void RegisterKill()
     {
         KillCount++;
-        Debug.Log("[KillTracker] Kill count: " + KillCount);
         onKillCountChanged?.Invoke(KillCount);
     }
 }

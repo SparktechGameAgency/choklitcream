@@ -1,4 +1,4 @@
-﻿
+// Scripts/Weapons/GrenadeWeapon.cs
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,17 +6,17 @@ using UnityEngine;
 public class GrenadeWeapon : MonoBehaviour
 {
     private SpecialWeaponData data;
-    private int currentLevel;
-    private GameObject grenadePrefab;
-    private Transform player;
+    private int               currentLevel;
+    private GameObject        grenadePrefab;
+    private Transform         player;
 
     public void Initialize(SpecialWeaponData d, int level,
                            GameObject prefab, Transform playerT)
     {
-        data = d;
+        data          = d;
         grenadePrefab = prefab;
-        player = playerT;
-        currentLevel = level;
+        player        = playerT;
+        currentLevel  = level;
         StartCoroutine(ThrowLoop());
     }
 
@@ -33,11 +33,8 @@ public class GrenadeWeapon : MonoBehaviour
 
     void ThrowGrenades()
     {
-        int count = data.GetCount(currentLevel);
+        int             count   = data.GetCount(currentLevel);
         List<Transform> targets = GetNNearest(count);
-
-        Debug.Log("[Grenade] Throwing " + count
-                + " grenades | Targets found: " + targets.Count);
 
         for (int i = 0; i < count; i++)
         {
@@ -53,8 +50,8 @@ public class GrenadeWeapon : MonoBehaviour
     IEnumerator GrenadeSeek(GameObject grenade, Transform target)
     {
         float elapsed = 0f;
-        float delay = data.explosionDelay;
-        float speed = data.grenadeSpeed;
+        float delay   = data.explosionDelay;
+        float speed   = data.grenadeSpeed;
 
         while (elapsed < delay)
         {
@@ -71,46 +68,31 @@ public class GrenadeWeapon : MonoBehaviour
         }
 
         if (grenade == null) yield break;
-
         Explode(grenade.transform.position);
         Destroy(grenade);
     }
 
     void Explode(Vector3 pos)
     {
-        float damage = data.GetDamage(currentLevel);
-        float mult = AbilityManager.Instance != null
+        float damage      = data.GetDamage(currentLevel);
+        float mult        = AbilityManager.Instance != null
                               ? AbilityManager.Instance.DamageMultiplier : 1f;
         float finalDamage = damage * mult;
 
-        // Use tag instead of layer
         Collider2D[] hits = Physics2D.OverlapCircleAll(pos, data.explosionRadius);
-
-        int hitCount = 0;
 
         foreach (var hit in hits)
         {
             if (!hit.CompareTag("Enemy")) continue;
-
             var enemy = hit.GetComponent<EnemyController>();
             if (enemy == null) continue;
-
-            // ── Debug log ──────────────────────────────────────
-            Debug.Log("[Grenade] Hit enemy: " + hit.gameObject.name
-                    + " | Damage: " + finalDamage);
-
-            enemy.TakeDamage(finalDamage); // flash + popup inside here
-            hitCount++;
+            enemy.TakeDamage(finalDamage);
         }
-
-        Debug.Log("[Grenade] Exploded at " + pos
-                + " | Enemies hit: " + hitCount
-                + " | Radius: " + data.explosionRadius);
     }
 
     List<Transform> GetNNearest(int n)
     {
-        GameObject[] all = GameObject.FindGameObjectsWithTag("Enemy");
+        GameObject[]     all    = GameObject.FindGameObjectsWithTag("Enemy");
         List<GameObject> active = new();
 
         foreach (var e in all)

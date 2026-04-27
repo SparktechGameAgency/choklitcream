@@ -35,8 +35,8 @@ MonoBehaviour:
   grenadeSpeed: 4
   explosionDelay: 1
   explosionRadius: 2
-  beamRange: 8
-  beamWidth: 0.08
+  beamRange: 1.5
+  beamWidth: 0.2
   beamDuration: 0.4
   axeArcHeight: 3.5
   axeTravelDist: 2.5

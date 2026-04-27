@@ -1,4 +1,4 @@
-﻿// Scripts/Systems/ObjectPool.cs
+// Scripts/Systems/ObjectPool.cs
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,14 +7,14 @@ public class ObjectPool : MonoBehaviour
     [System.Serializable]
     public class Pool
     {
-        public string tag;
+        public string     tag;
         public GameObject prefab;
-        public int initialSize = 10;
+        public int        initialSize = 10;
     }
 
     public static ObjectPool Instance;
 
-    [Header("Pools — add enemies and any static pools here")]
+    [Header("Pools — add enemies and static pools here")]
     public List<Pool> pools = new();
 
     private Dictionary<string, Queue<GameObject>> poolDictionary = new();
@@ -22,29 +22,18 @@ public class ObjectPool : MonoBehaviour
     void Awake()
     {
         Instance = this;
-
-        // Pre-spawn every pool defined in the Inspector
         foreach (Pool pool in pools)
             InitialisePool(pool);
     }
 
-    // ── Internal ──────────────────────────────────────────────
-
     void InitialisePool(Pool pool)
     {
-        if (poolDictionary.ContainsKey(pool.tag))
-        {
-            Debug.LogWarning("[ObjectPool] Pool already exists: " + pool.tag);
-            return;
-        }
+        if (poolDictionary.ContainsKey(pool.tag)) return;
 
         Queue<GameObject> queue = new();
 
         for (int i = 0; i < pool.initialSize; i++)
-        {
-            GameObject obj = CreateNew(pool.prefab);
-            queue.Enqueue(obj);
-        }
+            queue.Enqueue(CreateNew(pool.prefab));
 
         poolDictionary[pool.tag] = queue;
     }
@@ -56,51 +45,26 @@ public class ObjectPool : MonoBehaviour
         return obj;
     }
 
-    // ── Public API ────────────────────────────────────────────
-
-    // Called by WeaponManager at runtime to register projectile pools
     public void AddPool(Pool pool)
     {
-        if (pool.prefab == null)
-        {
-            Debug.LogError("[ObjectPool] Tried to add pool with null prefab: " + pool.tag);
-            return;
-        }
-
-        if (poolDictionary.ContainsKey(pool.tag)) return;
+        if (pool.prefab == null)                   return;
+        if (poolDictionary.ContainsKey(pool.tag))  return;
 
         pools.Add(pool);
         InitialisePool(pool);
-
-        Debug.Log("[ObjectPool] Pool registered: " + pool.tag
-                + " (size: " + pool.initialSize + ")");
     }
 
-    // Pull an object from the pool
     public GameObject Get(string tag, Vector3 position)
     {
-        if (!poolDictionary.ContainsKey(tag))
-        {
-            Debug.LogError("[ObjectPool] No pool found with tag: " + tag
-                         + " — make sure AddPool() is called before Get()");
-            return null;
-        }
+        if (!poolDictionary.ContainsKey(tag)) return null;
 
         Queue<GameObject> queue = poolDictionary[tag];
 
-        // Auto-expand pool if empty
         if (queue.Count == 0)
         {
             Pool pool = pools.Find(p => p.tag == tag);
-            if (pool == null || pool.prefab == null)
-            {
-                Debug.LogError("[ObjectPool] Pool prefab is null for tag: " + tag);
-                return null;
-            }
-
-            Debug.LogWarning("[ObjectPool] Pool empty, expanding: " + tag);
-            GameObject extra = CreateNew(pool.prefab);
-            queue.Enqueue(extra);
+            if (pool == null || pool.prefab == null) return null;
+            queue.Enqueue(CreateNew(pool.prefab));
         }
 
         GameObject obj = queue.Dequeue();
@@ -110,13 +74,10 @@ public class ObjectPool : MonoBehaviour
         return obj;
     }
 
-    // Return an object back to the pool
     public void Return(string tag, GameObject obj)
     {
         if (!poolDictionary.ContainsKey(tag))
         {
-            Debug.LogWarning("[ObjectPool] Returning to unknown pool: " + tag
-                           + " — destroying instead");
             Destroy(obj);
             return;
         }
@@ -126,6 +87,5 @@ public class ObjectPool : MonoBehaviour
         poolDictionary[tag].Enqueue(obj);
     }
 
-    // Check if a pool exists (useful for safety checks)
     public bool HasPool(string tag) => poolDictionary.ContainsKey(tag);
 }

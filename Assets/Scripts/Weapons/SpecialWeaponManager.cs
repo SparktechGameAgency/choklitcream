@@ -1,4 +1,4 @@
-﻿// Scripts/Weapons/SpecialWeaponManager.cs
+// Scripts/Weapons/SpecialWeaponManager.cs
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,13 +10,13 @@ public class SpecialWeaponManager : MonoBehaviour
     public List<SpecialWeaponData> allWeapons = new();
 
     [Header("References")]
-    public Transform player;
-    public GameObject sawPrefab;
-    public GameObject grenadePrefab;
-    public GameObject axePrefab;
-    public GameObject boomerangPrefab; // ← new
+    public Transform   player;
+    public GameObject  sawPrefab;
+    public GameObject  grenadePrefab;
+    public GameObject  axePrefab;
+    public GameObject  boomerangPrefab;
 
-    private Dictionary<string, int> weaponLevels = new();
+    private Dictionary<string, int>           weaponLevels     = new();
     private Dictionary<string, MonoBehaviour> weaponComponents = new();
 
     void Awake()
@@ -44,21 +44,13 @@ public class SpecialWeaponManager : MonoBehaviour
     public void EquipOrUpgrade(SpecialWeaponData data)
     {
         int currentLevel = GetLevel(data);
-        if (currentLevel >= data.MaxLevel)
-        {
-            Debug.Log("[SpecialWeapon] " + data.weaponName + " is max level!");
-            return;
-        }
+        if (currentLevel >= data.MaxLevel) return;
 
         int newLevel = currentLevel + 1;
         weaponLevels[data.weaponName] = newLevel;
 
-        if (currentLevel == 0)
-            CreateWeapon(data, newLevel);
-        else
-            UpgradeWeapon(data, newLevel);
-
-        Debug.Log("[SpecialWeapon] " + data.weaponName + " → Lv." + newLevel);
+        if (currentLevel == 0) CreateWeapon(data, newLevel);
+        else                   UpgradeWeapon(data, newLevel);
     }
 
     void CreateWeapon(SpecialWeaponData data, int level)
@@ -70,22 +62,14 @@ public class SpecialWeaponManager : MonoBehaviour
         switch (data.weaponType)
         {
             case SpecialWeaponType.Saw:
-                if (sawPrefab == null)
-                {
-                    Debug.LogError("[SpecialWeapon] Saw prefab missing!");
-                    return;
-                }
+                if (sawPrefab == null) return;
                 var saw = obj.AddComponent<SawWeapon>();
                 saw.Initialize(data, level, sawPrefab, player);
                 weaponComponents[data.weaponName] = saw;
                 break;
 
             case SpecialWeaponType.Grenade:
-                if (grenadePrefab == null)
-                {
-                    Debug.LogError("[SpecialWeapon] Grenade prefab missing!");
-                    return;
-                }
+                if (grenadePrefab == null) return;
                 var grenade = obj.AddComponent<GrenadeWeapon>();
                 grenade.Initialize(data, level, grenadePrefab, player);
                 weaponComponents[data.weaponName] = grenade;
@@ -98,22 +82,14 @@ public class SpecialWeaponManager : MonoBehaviour
                 break;
 
             case SpecialWeaponType.Axe:
-                if (axePrefab == null)
-                {
-                    Debug.LogError("[SpecialWeapon] Axe prefab missing!");
-                    return;
-                }
+                if (axePrefab == null) return;
                 var axe = obj.AddComponent<AxeWeapon>();
                 axe.Initialize(data, level, axePrefab, player);
                 weaponComponents[data.weaponName] = axe;
                 break;
 
             case SpecialWeaponType.Boomerang:
-                if (boomerangPrefab == null)
-                {
-                    Debug.LogError("[SpecialWeapon] Boomerang prefab missing!");
-                    return;
-                }
+                if (boomerangPrefab == null) return;
                 var boom = obj.AddComponent<BoomerangWeapon>();
                 boom.Initialize(data, level, boomerangPrefab, player);
                 weaponComponents[data.weaponName] = boom;
@@ -126,10 +102,10 @@ public class SpecialWeaponManager : MonoBehaviour
         if (!weaponComponents.ContainsKey(data.weaponName)) return;
 
         var comp = weaponComponents[data.weaponName];
-        if (comp is SawWeapon saw) saw.Upgrade(newLevel);
-        else if (comp is GrenadeWeapon grenade) grenade.Upgrade(newLevel);
-        else if (comp is BeamWeapon beam) beam.Upgrade(newLevel);
-        else if (comp is AxeWeapon axe) axe.Upgrade(newLevel);
-        else if (comp is BoomerangWeapon boom) boom.Upgrade(newLevel);
+        if      (comp is SawWeapon       saw)     saw.Upgrade(newLevel);
+        else if (comp is GrenadeWeapon   grenade)  grenade.Upgrade(newLevel);
+        else if (comp is BeamWeapon      beam)     beam.Upgrade(newLevel);
+        else if (comp is AxeWeapon       axe)      axe.Upgrade(newLevel);
+        else if (comp is BoomerangWeapon boom)     boom.Upgrade(newLevel);
     }
 }

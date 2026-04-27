@@ -1,4 +1,4 @@
-﻿
+// Scripts/Weapons/SawWeapon.cs
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,17 +6,17 @@ using UnityEngine;
 public class SawWeapon : MonoBehaviour
 {
     private SpecialWeaponData data;
-    private int currentLevel;
-    private GameObject sawPrefab;
-    private Transform player;
-    private List<GameObject> saws = new();
+    private int               currentLevel;
+    private GameObject        sawPrefab;
+    private Transform         player;
+    private List<GameObject>  saws = new();
 
     public void Initialize(SpecialWeaponData d, int level,
                            GameObject prefab, Transform playerT)
     {
-        data = d;
-        sawPrefab = prefab;
-        player = playerT;
+        data         = d;
+        sawPrefab    = prefab;
+        player       = playerT;
         currentLevel = level;
         SpawnSaws();
     }
@@ -35,7 +35,7 @@ public class SawWeapon : MonoBehaviour
 
     void SpawnSaws()
     {
-        int count = data.GetCount(currentLevel);
+        int   count     = data.GetCount(currentLevel);
         float angleStep = 360f / count;
 
         for (int i = 0; i < count; i++)
@@ -51,17 +51,16 @@ public class SawWeapon : MonoBehaviour
 
         while (true)
         {
-            float angle = startAngle;
-            float damage = data.GetDamage(currentLevel);
-            float speed = data.orbitSpeed;
-            float radius = data.orbitRadius;
-            float mult = AbilityManager.Instance != null
-                                    ? AbilityManager.Instance.DamageMultiplier : 1f;
+            float angle       = startAngle;
+            float damage      = data.GetDamage(currentLevel);
+            float speed       = data.orbitSpeed;
+            float radius      = data.orbitRadius;
+            float mult        = AbilityManager.Instance != null
+                                  ? AbilityManager.Instance.DamageMultiplier : 1f;
             float finalDamage = damage * mult;
 
             HashSet<EnemyController> hitThisPass = new();
 
-            // Orbit one full revolution
             while (angle - startAngle < 360f)
             {
                 if (saw == null) yield break;
@@ -73,22 +72,15 @@ public class SawWeapon : MonoBehaviour
 
                 saw.transform.Rotate(0f, 0f, speed * Time.deltaTime);
 
-                // Use tag instead of layer — avoids layer name mismatch
                 Collider2D[] hits = Physics2D.OverlapCircleAll(
                     saw.transform.position, 0.4f);
 
                 foreach (var h in hits)
                 {
                     if (!h.CompareTag("Enemy")) continue;
-
                     var enemy = h.GetComponent<EnemyController>();
                     if (enemy == null || hitThisPass.Contains(enemy)) continue;
-
-                    // ── Debug log ──────────────────────────────────
-                    Debug.Log("[Saw] Hit enemy: " + h.gameObject.name
-                            + " | Damage: " + finalDamage);
-
-                    enemy.TakeDamage(finalDamage); // flash + popup inside here
+                    enemy.TakeDamage(finalDamage);
                     hitThisPass.Add(enemy);
                 }
 
@@ -96,7 +88,6 @@ public class SawWeapon : MonoBehaviour
                 yield return null;
             }
 
-            // Vanish for pause
             if (saw != null) saw.SetActive(false);
             yield return new WaitForSeconds(data.sawPause);
             if (saw != null) saw.SetActive(true);

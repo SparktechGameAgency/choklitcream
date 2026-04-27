@@ -1,4 +1,4 @@
-﻿
+// Scripts/Weapons/WeaponManager.cs
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -28,40 +28,21 @@ public class WeaponManager : MonoBehaviour
     {
         foreach (var data in availableWeapons)
         {
-            if (data == null)
-            {
-                Debug.LogError("[WeaponManager] Null entry in Available Weapons!");
-                continue;
-            }
-
-            if (data.projectilePrefab == null)
-            {
-                Debug.LogError("[WeaponManager] " + data.weaponName
-                             + " has no projectile prefab in WeaponData!");
-                continue;
-            }
+            if (data == null || data.projectilePrefab == null) continue;
 
             ObjectPool.Instance.AddPool(new ObjectPool.Pool
             {
-                tag = data.PoolTag,
-                prefab = data.projectilePrefab,
+                tag         = data.PoolTag,
+                prefab      = data.projectilePrefab,
                 initialSize = 20
             });
-
-            Debug.Log("[WeaponManager] Pool registered: " + data.PoolTag);
         }
     }
 
     public void EquipWeapon(WeaponData data)
     {
         foreach (var wc in equippedWeapons)
-        {
-            if (wc.data.weaponName == data.weaponName)
-            {
-                Debug.Log("[WeaponManager] Already equipped: " + data.weaponName);
-                return;
-            }
-        }
+            if (wc.data.weaponName == data.weaponName) return;
 
         GameObject obj = new GameObject("Weapon_" + data.weaponName);
         obj.transform.SetParent(player);
@@ -70,9 +51,6 @@ public class WeaponManager : MonoBehaviour
         WeaponController wc2 = obj.AddComponent<WeaponController>();
         wc2.Initialize(data, player);
         equippedWeapons.Add(wc2);
-
-        Debug.Log("[WeaponManager] Equipped: " + data.weaponName
-                + " | Total: " + equippedWeapons.Count);
     }
 
     public List<WeaponData> GetAvailableWeaponDatas()

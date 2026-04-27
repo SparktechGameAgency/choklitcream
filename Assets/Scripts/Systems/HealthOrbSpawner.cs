@@ -1,4 +1,4 @@
-
+// Scripts/Systems/HealthOrbSpawner.cs
 using UnityEngine;
 
 public class HealthOrbSpawner : MonoBehaviour
@@ -6,42 +6,48 @@ public class HealthOrbSpawner : MonoBehaviour
     public static HealthOrbSpawner Instance;
 
     [Header("Spawn Settings")]
-    [Tooltip("How many kills needed before first health orb spawns")]
-    public int killsPerOrb = 15;
-    [Tooltip("Random extra kills added so it's not perfectly predictable")]
-    public int killVariance = 5;
+    [Tooltip("Base kills needed between each health orb")]
+    public int   killsPerOrb  = 15;
+    [Tooltip("Random extra kills added so spawns feel natural")]
+    public int   killVariance = 5;
     [Tooltip("How much health the orb restores")]
-    public float healAmount = 20f;
+    public float healAmount   = 20f;
     [Tooltip("How far from player the orb spawns")]
-    public float spawnRadius = 3f;
+    public float spawnRadius  = 3f;
 
-    private int killsUntilNextOrb;
-    private int totalKillsTracked;
+    // Simple counter — resets every time an orb spawns
+    private int killsSinceLastOrb = 0;
+    private int nextOrbTarget     = 0;
 
     void Awake()
     {
         Instance = this;
-        ResetKillThreshold();
+        SetNextTarget();
     }
 
     void Start()
     {
         if (KillTracker.Instance != null)
             KillTracker.Instance.onKillCountChanged.AddListener(OnKillChanged);
-        else
-            Debug.LogError("[HealthOrbSpawner] KillTracker not found!");
     }
 
     void OnKillChanged(int totalKills)
     {
-        totalKillsTracked = totalKills;
+        killsSinceLastOrb++;
 
-        // Check if we hit the threshold
-        if (totalKills >= killsUntilNextOrb)
+        if (killsSinceLastOrb >= nextOrbTarget)
         {
             SpawnOrb();
-            ResetKillThreshold();
+            killsSinceLastOrb = 0;
+            SetNextTarget();
         }
+    }
+
+    void SetNextTarget()
+    {
+        // Always at least 1 kill required — never 0
+        nextOrbTarget = Mathf.Max(1, killsPerOrb
+                      + Random.Range(0, Mathf.Max(0, killVariance) + 1));
     }
 
     void SpawnOrb()
@@ -49,26 +55,10 @@ public class HealthOrbSpawner : MonoBehaviour
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null) return;
 
-        // Spawn at a random position near the player
         Vector2 randomOffset = Random.insideUnitCircle.normalized * spawnRadius;
-        Vector3 spawnPos = playerObj.transform.position
+        Vector3 spawnPos     = playerObj.transform.position
                              + new Vector3(randomOffset.x, randomOffset.y, 0f);
 
-        Debug.Log("[HealthOrbSpawner] Spawning health orb!"
-                + " | Total kills: " + totalKillsTracked
-                + " | Next orb at: " + killsUntilNextOrb
-                + " | Spawn pos: " + spawnPos);
-
         HealthOrb.Spawn(spawnPos, healAmount);
-    }
-
-    void ResetKillThreshold()
-    {
-        // Next orb requires kills + random variance so it feels natural
-        int variance = Random.Range(0, killVariance + 1);
-        killsUntilNextOrb = totalKillsTracked + killsPerOrb + variance;
-
-        Debug.Log("[HealthOrbSpawner] Next health orb at kill: "
-                + killsUntilNextOrb);
     }
 }

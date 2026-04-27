@@ -1,4 +1,4 @@
-﻿// Scripts/Weapons/WeaponController.cs
+
 using UnityEngine;
 
 public class WeaponController : MonoBehaviour
@@ -12,10 +12,7 @@ public class WeaponController : MonoBehaviour
     {
         data = weaponData;
         player = playerTransform;
-        fireTimer = 1f / data.fireRate;
-
-        Debug.Log("[Weapon] Initialized: " + data.weaponName
-                + " | PoolTag: " + data.PoolTag);
+        fireTimer = GetFireInterval();
     }
 
     void Update()
@@ -26,14 +23,26 @@ public class WeaponController : MonoBehaviour
         if (fireTimer <= 0f)
         {
             TryShoot();
-            fireTimer = 1f / data.fireRate;
+            fireTimer = GetFireInterval();
         }
+    }
+
+    /// <summary>
+    /// Returns the seconds between shots, accounting for the
+    /// FireRateMultiplier ability (higher multiplier = shorter interval).
+    /// </summary>
+    float GetFireInterval()
+    {
+        float multiplier = AbilityManager.Instance != null
+            ? AbilityManager.Instance.FireRateMultiplier
+            : 1f;
+
+        return 1f / (data.fireRate * multiplier);
     }
 
     void TryShoot()
     {
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-
         Transform nearest = null;
         float minDist = Mathf.Infinity;
 
@@ -49,32 +58,19 @@ public class WeaponController : MonoBehaviour
         }
 
         if (nearest == null) return;
-
         Shoot(nearest.position);
     }
 
     void Shoot(Vector3 targetPos)
     {
         Vector2 dir = (targetPos - player.position).normalized;
-        string poolTag = data.PoolTag; // ← uses the safe unique tag
+        string poolTag = data.PoolTag;
 
-        if (!ObjectPool.Instance.HasPool(poolTag))
-        {
-            Debug.LogError("[Weapon] Pool not found: " + poolTag);
-            return;
-        }
+        if (!ObjectPool.Instance.HasPool(poolTag)) return;
 
         GameObject proj = ObjectPool.Instance.Get(poolTag, player.position);
         if (proj == null) return;
 
-        Projectile p = proj.GetComponent<Projectile>();
-        if (p == null)
-        {
-            Debug.LogError("[Weapon] Projectile component missing on prefab: "
-                         + proj.name);
-            return;
-        }
-
-        p.Initialize(dir, data);
+        proj.GetComponent<Projectile>()?.Initialize(dir, data);
     }
 }

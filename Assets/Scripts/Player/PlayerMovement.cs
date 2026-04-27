@@ -1,5 +1,4 @@
-﻿
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
@@ -61,15 +60,8 @@ public class PlayerMovement : MonoBehaviour
                 Vector2 mouseWorld = cam.ScreenToWorldPoint(mouseScreen);
                 Vector2 toMouse = mouseWorld - (Vector2)transform.position;
 
-                Debug.Log("[Player] Mouse world pos: " + mouseWorld
-                        + " | Player pos: " + (Vector2)transform.position
-                        + " | Distance: " + toMouse.magnitude
-                        + " | Direction: " + toMouse.normalized);
-
                 if (toMouse.magnitude > mouseStopRadius)
                     finalDirection = toMouse.normalized;
-                else
-                    Debug.Log("[Player] Too close to cursor — not moving");
             }
         }
 
@@ -86,8 +78,6 @@ public class PlayerMovement : MonoBehaviour
     {
         rb.linearVelocity = finalDirection * moveSpeed;
 
-        if (finalDirection != Vector2.zero)
-            Debug.Log("[Player] Moving: " + finalDirection
-                    + " | Velocity: " + rb.linearVelocity);
+
     }
 }

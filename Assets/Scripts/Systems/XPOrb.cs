@@ -1,11 +1,11 @@
-﻿
+// Scripts/Systems/XPOrb.cs
 using UnityEngine;
 
 public class XPOrb : MonoBehaviour
 {
-    internal float xpAmount;
-    internal bool attracting = false;
-    internal float attractSpeed = 0f;
+    internal float     xpAmount;
+    internal bool      attracting   = false;
+    internal float     attractSpeed = 0f;
 
     public float minAttractSpeed = 5f;
     public float maxAttractSpeed = 14f;
@@ -16,24 +16,16 @@ public class XPOrb : MonoBehaviour
 
     public static void Spawn(Vector3 position, float amount)
     {
-        if (!ObjectPool.Instance.HasPool(POOL_TAG))
-        {
-            Debug.LogError("[XPOrb] Pool not registered!");
-            return;
-        }
+        if (!ObjectPool.Instance.HasPool(POOL_TAG)) return;
 
         GameObject obj = ObjectPool.Instance.Get(POOL_TAG, position);
         if (obj == null) return;
 
         XPOrb orb = obj.GetComponent<XPOrb>();
-        if (orb == null)
-        {
-            Debug.LogError("[XPOrb] XPOrb script missing on prefab!");
-            return;
-        }
+        if (orb == null) return;
 
-        orb.xpAmount = amount;
-        orb.attracting = false;
+        orb.xpAmount     = amount;
+        orb.attracting   = false;
         orb.attractSpeed = orb.minAttractSpeed;
 
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
@@ -44,7 +36,6 @@ public class XPOrb : MonoBehaviour
     {
         if (player == null) return;
 
-        // Get attract radius from AbilityManager (includes magnet upgrades)
         float radius = AbilityManager.Instance != null
             ? AbilityManager.Instance.AttractRadius : 3f;
 
@@ -69,7 +60,6 @@ public class XPOrb : MonoBehaviour
 
     void Collect()
     {
-        // Apply XP multiplier from AbilityManager
         float multiplier = AbilityManager.Instance != null
             ? AbilityManager.Instance.XPMultiplier : 1f;
 
@@ -84,7 +74,7 @@ public class XPOrb : MonoBehaviour
 
     void OnDisable()
     {
-        attracting = false;
+        attracting   = false;
         attractSpeed = minAttractSpeed;
     }
 }

@@ -1,23 +1,23 @@
-﻿
+// Scripts/Weapons/BeamWeapon.cs
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class BeamWeapon : MonoBehaviour
 {
-    private SpecialWeaponData data;
-    private int currentLevel;
-    private Transform player;
+    private SpecialWeaponData  data;
+    private int                currentLevel;
+    private Transform          player;
     private List<LineRenderer> beams = new();
 
     [Header("Beam Color")]
     public Color beamStartColor = new Color(0.3f, 0.9f, 1f, 1f);
-    public Color beamEndColor = new Color(0.3f, 0.9f, 1f, 0f);
+    public Color beamEndColor   = new Color(0.3f, 0.9f, 1f, 0f);
 
     public void Initialize(SpecialWeaponData d, int level, Transform playerT)
     {
-        data = d;
-        player = playerT;
+        data         = d;
+        player       = playerT;
         currentLevel = level;
         CreateBeams();
         StartCoroutine(BeamLoop());
@@ -26,11 +26,9 @@ public class BeamWeapon : MonoBehaviour
     public void Upgrade(int newLevel)
     {
         currentLevel = newLevel;
-
         foreach (var b in beams)
             if (b != null) Destroy(b.gameObject);
         beams.Clear();
-
         CreateBeams();
     }
 
@@ -43,21 +41,19 @@ public class BeamWeapon : MonoBehaviour
             GameObject obj = new GameObject("Beam_" + i);
             obj.transform.SetParent(transform);
 
-            LineRenderer lr = obj.AddComponent<LineRenderer>();
+            LineRenderer lr  = obj.AddComponent<LineRenderer>();
             lr.positionCount = 2;
-            lr.startWidth = data.beamWidth;
-            lr.endWidth = data.beamWidth * 0.3f;
-            lr.material = new Material(Shader.Find("Sprites/Default"));
-            lr.startColor = beamStartColor;
-            lr.endColor = beamEndColor;
-            lr.sortingOrder = 5;
-            lr.enabled = false;
+            lr.startWidth    = data.beamWidth;
+            lr.endWidth      = data.beamWidth * 0.3f;
+            lr.material      = new Material(Shader.Find("Sprites/Default"));
+            lr.startColor    = beamStartColor;
+            lr.endColor      = beamEndColor;
+            lr.sortingOrder  = 5;
+            lr.enabled       = false;
             lr.useWorldSpace = true;
 
             beams.Add(lr);
         }
-
-        Debug.Log("[Beam] Created " + count + " beams at level " + currentLevel);
     }
 
     IEnumerator BeamLoop()
@@ -65,9 +61,6 @@ public class BeamWeapon : MonoBehaviour
         while (true)
         {
             List<Transform> targets = GetNNearest(beams.Count);
-
-            Debug.Log("[Beam] Firing — beams: " + beams.Count
-                    + " | targets found: " + targets.Count);
 
             for (int i = 0; i < beams.Count; i++)
             {
@@ -85,20 +78,13 @@ public class BeamWeapon : MonoBehaviour
         if (target == null || !target.gameObject.activeInHierarchy)
             yield break;
 
-        float damage = data.GetDamage(currentLevel);
-        float mult = AbilityManager.Instance != null
+        float damage      = data.GetDamage(currentLevel);
+        float mult        = AbilityManager.Instance != null
                               ? AbilityManager.Instance.DamageMultiplier : 1f;
         float finalDamage = damage * mult;
 
-        // ── Debug log ──────────────────────────────────────────
-        Debug.Log("[Beam] Hit enemy: " + target.gameObject.name
-                + " | Damage: " + finalDamage);
+        target.GetComponent<EnemyController>()?.TakeDamage(finalDamage);
 
-        // Deal damage — flash + popup fires inside TakeDamage
-        target.GetComponent<EnemyController>()
-              ?.TakeDamage(finalDamage);
-
-        // Show beam visual
         lr.enabled = true;
         float elapsed = 0f;
 
@@ -112,10 +98,10 @@ public class BeamWeapon : MonoBehaviour
                     ? target.position
                     : player.position + Vector3.up * data.beamRange);
 
-            float alpha = 1f - elapsed / data.beamDuration;
+            float alpha   = 1f - elapsed / data.beamDuration;
             lr.startColor = new Color(beamStartColor.r, beamStartColor.g,
                                       beamStartColor.b, alpha);
-            lr.endColor = new Color(beamEndColor.r, beamEndColor.g,
+            lr.endColor   = new Color(beamEndColor.r, beamEndColor.g,
                                       beamEndColor.b, alpha * 0.3f);
             yield return null;
         }
@@ -125,7 +111,7 @@ public class BeamWeapon : MonoBehaviour
 
     List<Transform> GetNNearest(int n)
     {
-        GameObject[] all = GameObject.FindGameObjectsWithTag("Enemy");
+        GameObject[]     all    = GameObject.FindGameObjectsWithTag("Enemy");
         List<GameObject> active = new();
         foreach (var e in all)
             if (e.activeInHierarchy) active.Add(e);
