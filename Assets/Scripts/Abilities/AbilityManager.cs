@@ -72,6 +72,9 @@ public class AbilityManager : MonoBehaviour
         int newLevel = currentLevel + 1;
         abilityLevels[data.abilityName] = newLevel;
         ApplyAbility(data, newLevel);
+
+        // Notify the HUD so it updates immediately
+        AbilityHUDPanel.Instance?.Refresh();
     }
 
     void ApplyAbility(AbilityData data, int level)
