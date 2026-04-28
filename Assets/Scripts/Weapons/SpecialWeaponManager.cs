@@ -1,4 +1,4 @@
-// Scripts/Weapons/SpecialWeaponManager.cs
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,13 +10,13 @@ public class SpecialWeaponManager : MonoBehaviour
     public List<SpecialWeaponData> allWeapons = new();
 
     [Header("References")]
-    public Transform   player;
-    public GameObject  sawPrefab;
-    public GameObject  grenadePrefab;
-    public GameObject  axePrefab;
-    public GameObject  boomerangPrefab;
+    public Transform player;
+    public GameObject sawPrefab;
+    public GameObject grenadePrefab;
+    public GameObject axePrefab;
+    public GameObject boomerangPrefab;
 
-    private Dictionary<string, int>           weaponLevels     = new();
+    private Dictionary<string, int> weaponLevels = new();
     private Dictionary<string, MonoBehaviour> weaponComponents = new();
 
     void Awake()
@@ -50,7 +50,10 @@ public class SpecialWeaponManager : MonoBehaviour
         weaponLevels[data.weaponName] = newLevel;
 
         if (currentLevel == 0) CreateWeapon(data, newLevel);
-        else                   UpgradeWeapon(data, newLevel);
+        else UpgradeWeapon(data, newLevel);
+
+        // Notify the HUD so the weapon row appears / updates immediately
+        AbilityHUDPanel.Instance?.Refresh();
     }
 
     void CreateWeapon(SpecialWeaponData data, int level)
@@ -102,10 +105,10 @@ public class SpecialWeaponManager : MonoBehaviour
         if (!weaponComponents.ContainsKey(data.weaponName)) return;
 
         var comp = weaponComponents[data.weaponName];
-        if      (comp is SawWeapon       saw)     saw.Upgrade(newLevel);
-        else if (comp is GrenadeWeapon   grenade)  grenade.Upgrade(newLevel);
-        else if (comp is BeamWeapon      beam)     beam.Upgrade(newLevel);
-        else if (comp is AxeWeapon       axe)      axe.Upgrade(newLevel);
-        else if (comp is BoomerangWeapon boom)     boom.Upgrade(newLevel);
+        if (comp is SawWeapon saw) saw.Upgrade(newLevel);
+        else if (comp is GrenadeWeapon grenade) grenade.Upgrade(newLevel);
+        else if (comp is BeamWeapon beam) beam.Upgrade(newLevel);
+        else if (comp is AxeWeapon axe) axe.Upgrade(newLevel);
+        else if (comp is BoomerangWeapon boom) boom.Upgrade(newLevel);
     }
 }
